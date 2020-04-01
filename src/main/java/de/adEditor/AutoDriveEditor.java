@@ -1,5 +1,11 @@
 package de.adEditor;
 
+import com.formdev.flatlaf.FlatLightLaf;
+import de.adEditor.config.AdConfiguration;
+import de.adEditor.config.ConfigDialog;
+import de.adEditor.helper.IconHelper;
+import de.adEditor.routes.RoutesManagerPanel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -47,6 +53,7 @@ public class AutoDriveEditor extends JFrame {
     public static final String AUTO_DRIVE_COURSE_EDITOR_TITLE = "AutoDrive Course Editor 0.1";
 
     private MapPanel mapPanel;
+    private RoutesManagerPanel routesManagerPanel;
     private JButton saveButton;
     private JButton loadImageButton;
     private JToggleButton removeNode;
@@ -58,6 +65,7 @@ public class AutoDriveEditor extends JFrame {
     private JRadioButton oneTimesMap;
     private JRadioButton fourTimesMap;
     private JRadioButton sixteenTimesMap;
+    private JTabbedPane tabPane;
 
     public int editorState = EDITORSTATE_NOOP;
     private File xmlConfigFile;
@@ -71,7 +79,9 @@ public class AutoDriveEditor extends JFrame {
 
         LOG.info("AutoDrive start.............................................................................................");
         setTitle(createTitle());
-        setTractorIcon();
+        setIconImage(loadIcon("/tractor.png"));
+        setJMenuBar(createMenuBar());
+
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -84,17 +94,35 @@ public class AutoDriveEditor extends JFrame {
                 super.windowClosing(e);
             }
         });
-        setLayout(new BorderLayout());
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                checkAndLoadProperties();
+            }
+
+        });
+
+
+        tabPane = new JTabbedPane (JTabbedPane.TOP,JTabbedPane.SCROLL_TAB_LAYOUT );
+        add(tabPane);
+        JPanel editorPanel = new JPanel();
+        routesManagerPanel = new RoutesManagerPanel(this);
+        tabPane.addTab("Course Editor", new ImageIcon(IconHelper.getImageUrl("note_edit.png")) , editorPanel);
+        tabPane.addTab("Network Manager", new ImageIcon(IconHelper.getImageUrl("note_go.png")), routesManagerPanel);
+
+        editorPanel.setLayout(new BorderLayout());
 
         // create a new panel with GridBagLayout manager
         mapPanel = new MapPanel(this);
 
         // set border for the panel
-        mapPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "Map Panel"));
+        mapPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Map Panel"));
+        mapPanel.setPreferredSize(new Dimension(1024, 768));
+        mapPanel.setMinimumSize(new Dimension(1024, 768));
 
         // add the panel to this frame
-        add(mapPanel, BorderLayout.CENTER);
+        editorPanel.add(mapPanel, BorderLayout.CENTER);
 
         EditorListener editorListener = new EditorListener(this);
 
@@ -183,23 +211,42 @@ public class AutoDriveEditor extends JFrame {
         nodeBoxSetEnabled(false);
         mapBoxSetEnabled(false);
 
-        this.add(buttonPanel, BorderLayout.NORTH);
+        editorPanel.add(buttonPanel, BorderLayout.NORTH);
 
         pack();
         setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
-    private void setTractorIcon() {
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu menu = new JMenu("Editor");
+        menuBar.add(menu);
+
+        JMenuItem menuConfigItem = new JMenuItem("Configuration");
+        menuConfigItem.addActionListener(e ->{
+            showConfigDialog();
+            enableManagerPanel();
+        });
+        menu.add(menuConfigItem);
+
+        JMenuItem menuQuitItem = new JMenuItem("Quit");
+        menuQuitItem.addActionListener(e -> System.exit(0));
+        menu.add(menuQuitItem);
+
+        return menuBar;
+    }
+
+    private BufferedImage loadIcon(String name) {
         try {
-            URL url = AutoDriveEditor.class.getResource("/tractor.png");
+            URL url = AutoDriveEditor.class.getResource(name);
             if (url != null) {
-                BufferedImage tractorImage = ImageIO.read(url);
-                setIconImage(tractorImage);
+                return ImageIO.read(url);
             }
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
         }
+        return null;
     }
 
     private void nodeBoxSetEnabled(boolean enabled) {
@@ -251,7 +298,7 @@ public class AutoDriveEditor extends JFrame {
     public static void main(String[] args) {
         // set look and feel to the system look and feel
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
             LOG.error(ex.getMessage(), ex);
         }
@@ -668,4 +715,37 @@ public class AutoDriveEditor extends JFrame {
         }
     }
 
+
+    private void checkAndLoadProperties() {
+        File configFile = new File(AdConfiguration.CONFIG_FILE_NAME);
+        if (configFile.exists()) {
+            AdConfiguration.getInstance().readConfigFile();
+        } else {
+            showConfigDialog();
+        }
+        enableManagerPanel();
+    }
+
+    private void enableManagerPanel() {
+        if ( StringUtils.isNotBlank(AdConfiguration.getInstance().getProperties().getProperty(AdConfiguration.LS19_GAME_DIRECTORY))) {
+            tabPane.setEnabledAt(1, true);
+            try {
+                routesManagerPanel.reloadXMLRouteMetaData();
+            }catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
+        }
+        else {
+            tabPane.setEnabledAt(1, false);
+        }
+    }
+
+    private void showConfigDialog() {
+        ConfigDialog configDialog = new ConfigDialog(this, true);
+        configDialog.setVisible(true);
+        ConfigDialog.DIALOG_STATE dialog_state = configDialog.getState();
+        if (dialog_state.equals(ConfigDialog.DIALOG_STATE.OK)) {
+            AdConfiguration.getInstance().writeConfigFile();
+        }
+    }
 }

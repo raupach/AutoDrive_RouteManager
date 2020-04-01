@@ -1,0 +1,9 @@
+{
+  "realm": "autodrive",
+  "auth-server-url": "http://keycloak.si12.de/auth",
+  "ssl-required": "external",
+  "resource": "api-service",
+  "public-client": true,
+  "use-resource-role-mappings": false,
+  "enable-pkce": true
+}

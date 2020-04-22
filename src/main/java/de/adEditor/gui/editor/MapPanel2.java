@@ -12,10 +12,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MapPanel2 extends JPanel {
 
@@ -26,21 +27,24 @@ public class MapPanel2 extends JPanel {
 
     private static final Cursor handCursor = new Cursor(Cursor.HAND_CURSOR);
     private static final Cursor crosshairCursor = new Cursor(Cursor.CROSSHAIR_CURSOR);
+    private Rectangle selectedRectangle = null;
+    private Point selectedPoint = null;
 
 
-    private enum MapPanelMode {NONE, DRAGGING_NODE, DRAWING}
+
+    private enum MapPanelMode {NONE, DRAGGING_NODE, SELECTING_RECTANGLE, DRAWING}
     private EditorFrame editor;
     private RoadMap roadMap = new RoadMap();
     private BackgroundMapImage backgroundMapImage;
     private boolean mapMove = false;
-    private int lastMousePosX=0, lastMousePosY = 0;
+    private Point lastMousePos = new Point();
     private Point mousePos;
     private GNode tempLastNode;
     private MapPanelMode mapPanelMode = MapPanelMode.NONE;
     private AffineTransform tx = new AffineTransform();
     private final static Polygon arrowHead;
     private GNode touchedNode;
-    private GNode selectedNode;
+    private Set<GNode> selectedNodes = new HashSet<>();
 
     static {
         arrowHead = new Polygon();
@@ -67,6 +71,7 @@ public class MapPanel2 extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) {
+                mousePos = e.getPoint();
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     mouseButton1Released(e.getX(), e.getY());
                 }
@@ -77,6 +82,7 @@ public class MapPanel2 extends JPanel {
 
             @Override
             public void mousePressed(MouseEvent e) {
+                mousePos = e.getPoint();
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     mouseButton1Pressed(e.getX(), e.getY());
                 }
@@ -115,6 +121,7 @@ public class MapPanel2 extends JPanel {
 
             @Override
             public void mouseDragged(MouseEvent e) {
+                mousePos = e.getPoint();
                 if (SwingUtilities.isLeftMouseButton(e)) {
                     mouseDraggedButton1(e.getX(), e.getY());
                 } else if (SwingUtilities.isRightMouseButton(e)) {
@@ -153,18 +160,28 @@ public class MapPanel2 extends JPanel {
 
     private Optional<GNode> findNodeAt (int x, int y) {
         Rectangle r = new Rectangle(x-6, y-6, 12,12);
-        return roadMap.getGraph().vertexSet().stream()
-                .filter(n -> r.contains(worldVertexToScreenPos(n)) && !n.isSelected())
-                .findFirst();
+        return findNodesInRect(r).stream().findFirst();
     }
 
 
     private void mouseDraggedButton1(int x, int y) {
-        if (editor.getEditorMode().equals(EditorMode.MOVE) && selectedNode!=null && mapPanelMode.equals(MapPanelMode.DRAGGING_NODE)) {
-            selectedNode.setPos(screenPosToWorldPos(new Point(x, y)));
+        if (editor.getEditorMode().equals(EditorMode.MOVE) && mapPanelMode.equals(MapPanelMode.DRAGGING_NODE)) {
+            Point2D lastMouseWorldPos = screenPosToWorldPos(lastMousePos);
+            Point2D currentMouseWorldPos = screenPosToWorldPos(new Point(x, y));
+            double dx =  currentMouseWorldPos.getX() - lastMouseWorldPos.getX();
+            double dy = currentMouseWorldPos.getY() -lastMouseWorldPos.getY() ;
+            getSelectedNodes().forEach(node-> {
+                node.setX(node.getX() +dx);
+                node.setY(node.getY() +dy);
+            });
             repaint();
         }
-
+        if (editor.getEditorMode().equals(EditorMode.MOVE) && mapPanelMode.equals(MapPanelMode.SELECTING_RECTANGLE)) {
+            if (selectedRectangle != null) {
+                selectedRectangle = (new Line2D.Double(new Point2D.Double(selectedPoint.x,selectedPoint.y), new Point2D.Double(x,y))).getBounds();
+                repaint();
+            }
+        }
     }
 
     private void mouseWheelMovedd(int wheelRotation) {
@@ -200,10 +217,21 @@ public class MapPanel2 extends JPanel {
             tempLastNode = newVertex;
             repaint();
         } else if (editor.getEditorMode().equals(EditorMode.MOVE)) {
+            if (mapPanelMode.equals(MapPanelMode.SELECTING_RECTANGLE) && selectedRectangle != null) {
+                findNodesInRect (selectedRectangle).forEach(n -> n.setSelected(true));
+                selectedRectangle = null;
+            }
             mapPanelMode = MapPanelMode.NONE;
             setCursor(Cursor.getDefaultCursor());
+            repaint();
         }
 
+    }
+
+    private Set<GNode> findNodesInRect(Rectangle r) {
+        return roadMap.getGraph().vertexSet().stream()
+                .filter(n -> r.contains(worldVertexToScreenPos(n)))
+                .collect(Collectors.toSet());
     }
 
     private GNode screenPosToWorldVertex(int x, int y) {
@@ -233,9 +261,8 @@ public class MapPanel2 extends JPanel {
             mousePos = new Point(x, y);
         }
         if (mapMove) {
-            backgroundMapImage.move( lastMousePosX-x, lastMousePosY-y, this.getWidth(), this.getHeight());
-            lastMousePosX = x;
-            lastMousePosY = y;
+            backgroundMapImage.move( lastMousePos.x-x, lastMousePos.y-y, this.getWidth(), this.getHeight());
+            lastMousePos = new Point(x,y);
             repaint();
         }
 
@@ -244,29 +271,35 @@ public class MapPanel2 extends JPanel {
     private void mouseButton3Pressed(int x, int y) {
         LOG.debug("mouseButton3Pressed");
         mapMove = true;
-        lastMousePosX = x;
-        lastMousePosY = y;
+        lastMousePos = new Point(x,y);
     }
 
     private void mouseButton1Pressed(int x, int y) {
         if (editor.getEditorMode().equals(EditorMode.MOVE)) {
             touchedNode = null;
             Rectangle r = new Rectangle(x - 6, y - 6, 12, 12);
-            if (selectedNode != null){
-                selectedNode.setSelected(false);
-                selectedNode = null;
+            clearSelectedNodes();
+            Optional<GNode> optionalGNode = findNodeAt(x, y);
+            if (optionalGNode.isPresent()){
+                optionalGNode.get().setSelected(true);
+                mapPanelMode = MapPanelMode.DRAGGING_NODE;
+            } else {
+                mapPanelMode = MapPanelMode.SELECTING_RECTANGLE;
+                selectedRectangle = new Rectangle(x,y, 1,1);
+                selectedPoint = new Point(x,y);
             }
-
-            roadMap.getGraph().vertexSet().stream().filter(n -> r.contains(worldVertexToScreenPos(n))).findFirst().ifPresent(s -> selectedNode = s);
-
-            if (selectedNode != null) {
-                selectedNode.setSelected( true);
-            }
-            mapPanelMode = MapPanelMode.DRAGGING_NODE;
-
+            lastMousePos = new Point(x,y);
             setCursor(handCursor);
             repaint();
         }
+    }
+
+    private void clearSelectedNodes() {
+        roadMap.getGraph().vertexSet().forEach(node->node.setSelected(false));
+    }
+
+    private Set<GNode> getSelectedNodes() {
+        return roadMap.getGraph().vertexSet().parallelStream().filter(GNode::isSelected).collect(Collectors.toSet());
     }
 
     protected void paintComponent(Graphics g) {
@@ -307,6 +340,12 @@ public class MapPanel2 extends JPanel {
             Point p = worldVertexToScreenPos(tempLastNode);
             g.drawLine(p.x, p.y, mousePos.x, mousePos.y);
         }
+
+        if (mapPanelMode.equals(MapPanelMode.SELECTING_RECTANGLE) && selectedRectangle!=null) {
+            g.setColor(Color.LIGHT_GRAY);
+            g.drawRect(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width, selectedRectangle.height);
+        }
+
         LOG.debug("paintComponent end {}ms.", System.currentTimeMillis()-start);
     }
 
@@ -407,29 +446,29 @@ public class MapPanel2 extends JPanel {
     }
 
     private void delete() {
-        if (editor.getEditorMode().equals(EditorMode.MOVE) && selectedNode != null) {
-            Graph<GNode, GEdge> graph = roadMap.getGraph();
-            List<GEdge> incomingEdges = new ArrayList<>();
-            List<GEdge> outgoingEdges = new ArrayList<>();
-            CollectionUtils.addAll(incomingEdges, graph.incomingEdgesOf(selectedNode));
-            CollectionUtils.addAll( outgoingEdges ,graph.outgoingEdgesOf(selectedNode));
-            if (outgoingEdges.isEmpty()) {
-                graph.removeAllEdges(incomingEdges);
-                graph.removeVertex(selectedNode);
-            } else if (incomingEdges.isEmpty()){
-                graph.removeAllEdges(outgoingEdges);
-                graph.removeVertex(selectedNode);
-            } else if (outgoingEdges.size() == 1 && incomingEdges.size() == 1) {
-                GNode newTarget = graph.getEdgeTarget(outgoingEdges.get(0));
-                GNode newSource = graph.getEdgeSource(incomingEdges.get(0));
-                graph.removeAllEdges(incomingEdges);
-                graph.removeAllEdges(outgoingEdges);
-                graph.removeVertex(selectedNode);
-                graph.addEdge(newSource, newTarget);
-            }
-
-            repaint();
-        }
+//        if (editor.getEditorMode().equals(EditorMode.MOVE) && selectedNode != null) {
+//            Graph<GNode, GEdge> graph = roadMap.getGraph();
+//            List<GEdge> incomingEdges = new ArrayList<>();
+//            List<GEdge> outgoingEdges = new ArrayList<>();
+//            CollectionUtils.addAll(incomingEdges, graph.incomingEdgesOf(selectedNode));
+//            CollectionUtils.addAll( outgoingEdges ,graph.outgoingEdgesOf(selectedNode));
+//            if (outgoingEdges.isEmpty()) {
+//                graph.removeAllEdges(incomingEdges);
+//                graph.removeVertex(selectedNode);
+//            } else if (incomingEdges.isEmpty()){
+//                graph.removeAllEdges(outgoingEdges);
+//                graph.removeVertex(selectedNode);
+//            } else if (outgoingEdges.size() == 1 && incomingEdges.size() == 1) {
+//                GNode newTarget = graph.getEdgeTarget(outgoingEdges.get(0));
+//                GNode newSource = graph.getEdgeSource(incomingEdges.get(0));
+//                graph.removeAllEdges(incomingEdges);
+//                graph.removeAllEdges(outgoingEdges);
+//                graph.removeVertex(selectedNode);
+//                graph.addEdge(newSource, newTarget);
+//            }
+//
+//            repaint();
+//        }
     }
 
     public void reset() {

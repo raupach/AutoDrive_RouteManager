@@ -95,21 +95,17 @@ public class MapPanel2 extends JPanel {
                         mousePos = e.getPoint();
                         repaint();
                     }
-                } else if (editor.getEditorMode().equals(EditorMode.MOVE)) {
+                }
+                if (editor.getEditorMode().equals(EditorMode.MOVE)) {
                     setCursor(Cursor.getDefaultCursor());
+                }
+                if (editor.getEditorMode().equals(EditorMode.MOVE) || editor.getEditorMode().equals(EditorMode.DRAW)) {
                     boolean shouldRepaint = false;
                     if (touchedNode !=null) {
                         touchedNode = null;
                         shouldRepaint = true;
                     }
-                    Rectangle r = new Rectangle(e.getX()-6, e.getY()-6, 12,12);
-                    roadMap.getGraph().vertexSet().stream()
-                            .filter(n -> r.contains(worldVertexToScreenPos(n)) && !n.isSelected())
-                            .findFirst()
-                            .ifPresent(s -> {
-                                touchedNode = s;
-                                repaint();
-                            });
+                    findNodeAt(e.getX() ,e.getY()).ifPresent(node -> {touchedNode = node; repaint();});
 
                     if (shouldRepaint) {
                         repaint();
@@ -155,6 +151,13 @@ public class MapPanel2 extends JPanel {
         });
     }
 
+    private Optional<GNode> findNodeAt (int x, int y) {
+        Rectangle r = new Rectangle(x-6, y-6, 12,12);
+        return roadMap.getGraph().vertexSet().stream()
+                .filter(n -> r.contains(worldVertexToScreenPos(n)) && !n.isSelected())
+                .findFirst();
+    }
+
 
     private void mouseDraggedButton1(int x, int y) {
         if (editor.getEditorMode().equals(EditorMode.MOVE) && selectedNode!=null && mapPanelMode.equals(MapPanelMode.DRAGGING_NODE)) {
@@ -188,9 +191,8 @@ public class MapPanel2 extends JPanel {
             if (mapPanelMode.equals(MapPanelMode.NONE)) {
                 mapPanelMode = MapPanelMode.DRAWING;
             }
-            GNode newVertex = screenPosToWorldVertex (x, y);
+            GNode newVertex = findNodeAt(x, y).orElseGet(() -> screenPosToWorldVertex(x, y));
             Graph<GNode, GEdge> graph = roadMap.getGraph();
-            graph.addVertex(newVertex);
             graph.addVertex(newVertex);
             if (tempLastNode !=null) {
                 graph.addEdge(tempLastNode, newVertex, new GEdge(true));

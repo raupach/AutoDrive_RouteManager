@@ -28,7 +28,7 @@ public class MapPanel2 extends JPanel {
     private static final Cursor crosshairCursor = new Cursor(Cursor.CROSSHAIR_CURSOR);
 
 
-    private enum MapPanelMode {NONE, DRAGGING_NODE, DRAWING};
+    private enum MapPanelMode {NONE, DRAGGING_NODE, DRAWING}
     private EditorFrame editor;
     private RoadMap roadMap = new RoadMap();
     private BackgroundMapImage backgroundMapImage;
@@ -127,12 +127,7 @@ public class MapPanel2 extends JPanel {
             }
         });
 
-        addMouseWheelListener(new MouseWheelListener() {
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent mouseWheelEvent) {
-                mouseWheelMovedd(mouseWheelEvent.getWheelRotation());
-            }
-        });
+        addMouseWheelListener(mouseWheelEvent -> mouseWheelMovedd(mouseWheelEvent.getWheelRotation()));
 
 
         InputMap iMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -295,7 +290,6 @@ public class MapPanel2 extends JPanel {
             roadMap.getGraph().outgoingEdgesOf(p).forEach(outEdge -> {
                 GNode sourceNode = roadMap.getGraph().getEdgeSource(outEdge);
                 GNode targetNode = roadMap.getGraph().getEdgeTarget(outEdge);
-//                g.setColor(Color.GREEN);
                 ((Graphics2D) g).setStroke(stroke_2);
                 drawEdge(g, sourceNode, targetNode);
             });
@@ -304,19 +298,6 @@ public class MapPanel2 extends JPanel {
             drawVertex(g, p);
         }
 
-
-//        for (GNode p : tempNewLine.vertexSet()) {
-//            tempNewLine.outgoingEdgesOf(p).forEach(outEdge -> {
-//                GNode sourceNode = tempNewLine.getEdgeSource(outEdge);
-//                GNode targetNode = tempNewLine.getEdgeTarget(outEdge);
-//                g.setColor(Color.RED);
-//                ((Graphics2D) g).setStroke(stroke_2);
-//                drawEdge(g, sourceNode, targetNode);
-//            });
-//            g.setColor(Color.yellow);
-//            ((Graphics2D) g).setStroke(stroke_1);
-//            drawVertex(g, p);
-//        }
 
         if (mapPanelMode.equals(MapPanelMode.DRAWING) && tempLastNode != null && mousePos != null) {
             ((Graphics2D) g).setStroke(stroke_2);

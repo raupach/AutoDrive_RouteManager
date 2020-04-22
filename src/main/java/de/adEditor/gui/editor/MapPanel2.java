@@ -5,8 +5,6 @@ import de.adEditor.gui.graph.GEdge;
 import de.adEditor.gui.graph.GNode;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
-import org.jgrapht.graph.SimpleDirectedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,6 @@ public class MapPanel2 extends JPanel {
     private boolean mapMove = false;
     private int lastMousePosX=0, lastMousePosY = 0;
     private Point mousePos;
-    private Graph<GNode, GEdge> tempNewLine = new SimpleDirectedGraph<>(GEdge.class);
     private GNode tempLastNode;
     private MapPanelMode mapPanelMode = MapPanelMode.NONE;
     private AffineTransform tx = new AffineTransform();
@@ -197,10 +194,11 @@ public class MapPanel2 extends JPanel {
                 mapPanelMode = MapPanelMode.DRAWING;
             }
             GNode newVertex = screenPosToWorldVertex (x, y);
-            tempNewLine.addVertex(newVertex);
-            tempNewLine.addVertex(newVertex);
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
+            graph.addVertex(newVertex);
+            graph.addVertex(newVertex);
             if (tempLastNode !=null) {
-                tempNewLine.addEdge(tempLastNode, newVertex);
+                graph.addEdge(tempLastNode, newVertex, new GEdge(true));
             }
             tempLastNode = newVertex;
             repaint();
@@ -297,7 +295,7 @@ public class MapPanel2 extends JPanel {
             roadMap.getGraph().outgoingEdgesOf(p).forEach(outEdge -> {
                 GNode sourceNode = roadMap.getGraph().getEdgeSource(outEdge);
                 GNode targetNode = roadMap.getGraph().getEdgeTarget(outEdge);
-                g.setColor(Color.GREEN);
+//                g.setColor(Color.GREEN);
                 ((Graphics2D) g).setStroke(stroke_2);
                 drawEdge(g, sourceNode, targetNode);
             });
@@ -307,18 +305,18 @@ public class MapPanel2 extends JPanel {
         }
 
 
-        for (GNode p : tempNewLine.vertexSet()) {
-            tempNewLine.outgoingEdgesOf(p).forEach(outEdge -> {
-                GNode sourceNode = tempNewLine.getEdgeSource(outEdge);
-                GNode targetNode = tempNewLine.getEdgeTarget(outEdge);
-                g.setColor(Color.RED);
-                ((Graphics2D) g).setStroke(stroke_2);
-                drawEdge(g, sourceNode, targetNode);
-            });
-            g.setColor(Color.yellow);
-            ((Graphics2D) g).setStroke(stroke_1);
-            drawVertex(g, p);
-        }
+//        for (GNode p : tempNewLine.vertexSet()) {
+//            tempNewLine.outgoingEdgesOf(p).forEach(outEdge -> {
+//                GNode sourceNode = tempNewLine.getEdgeSource(outEdge);
+//                GNode targetNode = tempNewLine.getEdgeTarget(outEdge);
+//                g.setColor(Color.RED);
+//                ((Graphics2D) g).setStroke(stroke_2);
+//                drawEdge(g, sourceNode, targetNode);
+//            });
+//            g.setColor(Color.yellow);
+//            ((Graphics2D) g).setStroke(stroke_1);
+//            drawVertex(g, p);
+//        }
 
         if (mapPanelMode.equals(MapPanelMode.DRAWING) && tempLastNode != null && mousePos != null) {
             ((Graphics2D) g).setStroke(stroke_2);
@@ -330,8 +328,14 @@ public class MapPanel2 extends JPanel {
     }
 
     private void drawEdge(Graphics g, GNode sourceNode, GNode targetNode) {
+        GEdge edge = roadMap.getGraph().getEdge(sourceNode, targetNode);
         Point sourcePoint = worldVertexToScreenPos(sourceNode);
         Point targetPoint = worldVertexToScreenPos(targetNode);
+        if (edge.isSelected()) {
+            g.setColor(Color.RED);
+        } else {
+            g.setColor(Color.GREEN);
+        }
         g.drawLine(sourcePoint.x, sourcePoint.y, targetPoint.x, targetPoint.y);
         drawArrowHead((Graphics2D) g, sourcePoint, targetPoint);
     }
@@ -395,8 +399,7 @@ public class MapPanel2 extends JPanel {
     public void escape() {
         if (mapPanelMode.equals(MapPanelMode.DRAWING)){
             mapPanelMode = MapPanelMode.NONE;
-            Graphs.addGraph(roadMap.getGraph(), tempNewLine);
-            tempNewLine = new SimpleDirectedGraph<>(GEdge.class);
+            roadMap.getGraph().edgeSet().forEach(e->e.setSelected(false));
             tempLastNode = null;
             repaint();
         }
@@ -404,15 +407,16 @@ public class MapPanel2 extends JPanel {
 
     public void backSpace() {
         if (mapPanelMode.equals(MapPanelMode.DRAWING) && tempLastNode != null) {
-            Optional<GEdge> edgeOptional = tempNewLine.incomingEdgesOf(tempLastNode).stream().findFirst();
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
+            Optional<GEdge> edgeOptional = graph.incomingEdgesOf(tempLastNode).stream().findFirst();
             if (edgeOptional.isPresent()) {
                 GEdge incomingEdge = edgeOptional.get();
-                GNode source = tempNewLine.getEdgeSource(incomingEdge);
-                tempNewLine.removeVertex(tempLastNode);
-                tempNewLine.removeEdge(incomingEdge);
+                GNode source = graph.getEdgeSource(incomingEdge);
+                graph.removeVertex(tempLastNode);
+                graph.removeEdge(incomingEdge);
                 tempLastNode = source;
             }else {
-                tempNewLine.removeVertex(tempLastNode);
+                graph.removeVertex(tempLastNode);
                 tempLastNode = null;
             }
             repaint();

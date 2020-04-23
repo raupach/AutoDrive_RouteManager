@@ -14,8 +14,8 @@ import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MapPanel2 extends JPanel {
@@ -451,29 +451,37 @@ public class MapPanel2 extends JPanel {
     }
 
     private void delete() {
-//        if (editor.getEditorMode().equals(EditorMode.MOVE) && selectedNode != null) {
-//            Graph<GNode, GEdge> graph = roadMap.getGraph();
-//            List<GEdge> incomingEdges = new ArrayList<>();
-//            List<GEdge> outgoingEdges = new ArrayList<>();
-//            CollectionUtils.addAll(incomingEdges, graph.incomingEdgesOf(selectedNode));
-//            CollectionUtils.addAll( outgoingEdges ,graph.outgoingEdgesOf(selectedNode));
-//            if (outgoingEdges.isEmpty()) {
-//                graph.removeAllEdges(incomingEdges);
-//                graph.removeVertex(selectedNode);
-//            } else if (incomingEdges.isEmpty()){
-//                graph.removeAllEdges(outgoingEdges);
-//                graph.removeVertex(selectedNode);
-//            } else if (outgoingEdges.size() == 1 && incomingEdges.size() == 1) {
-//                GNode newTarget = graph.getEdgeTarget(outgoingEdges.get(0));
-//                GNode newSource = graph.getEdgeSource(incomingEdges.get(0));
-//                graph.removeAllEdges(incomingEdges);
-//                graph.removeAllEdges(outgoingEdges);
-//                graph.removeVertex(selectedNode);
-//                graph.addEdge(newSource, newTarget);
-//            }
-//
-//            repaint();
-//        }
+        if (editor.getEditorMode().equals(EditorMode.MOVE)) {
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
+
+            getSelectedNodes().forEach(selectedNode -> {
+                List<GEdge> incomingEdges = new ArrayList<>();
+                List<GEdge> outgoingEdges = new ArrayList<>();
+                CollectionUtils.addAll(incomingEdges, graph.incomingEdgesOf(selectedNode));
+                CollectionUtils.addAll(outgoingEdges, graph.outgoingEdgesOf(selectedNode));
+                if (outgoingEdges.isEmpty()) {
+                    graph.removeAllEdges(incomingEdges);
+                    graph.removeVertex(selectedNode);
+                } else if (incomingEdges.isEmpty()) {
+                    graph.removeAllEdges(outgoingEdges);
+                    graph.removeVertex(selectedNode);
+                } else if (outgoingEdges.size() == 1 && incomingEdges.size() == 1) {
+                    GNode newTarget = graph.getEdgeTarget(outgoingEdges.get(0));
+                    GNode newSource = graph.getEdgeSource(incomingEdges.get(0));
+                    graph.removeAllEdges(incomingEdges);
+                    graph.removeAllEdges(outgoingEdges);
+                    graph.removeVertex(selectedNode);
+                    graph.addEdge(newSource, newTarget);
+                } else {
+                    graph.removeAllEdges(incomingEdges);
+                    graph.removeAllEdges(outgoingEdges);
+                    graph.removeVertex(selectedNode);
+                }
+
+            });
+
+            repaint();
+        }
     }
 
     public void reset() {

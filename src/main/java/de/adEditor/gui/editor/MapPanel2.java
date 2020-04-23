@@ -278,13 +278,17 @@ public class MapPanel2 extends JPanel {
     private void mouseButton1Pressed(int x, int y) {
         if (editor.getEditorMode().equals(EditorMode.MOVE)) {
             touchedNode = null;
-            Rectangle r = new Rectangle(x - 6, y - 6, 12, 12);
-            clearSelectedNodes();
+
             Optional<GNode> optionalGNode = findNodeAt(x, y);
             if (optionalGNode.isPresent()){
-                optionalGNode.get().setSelected(true);
+                GNode node = optionalGNode.get();
+                if (!node.isSelected()) {
+                    clearSelectedNodes();
+                    node.setSelected(true);
+                }
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else {
+                clearSelectedNodes();
                 mapPanelMode = MapPanelMode.SELECTING_RECTANGLE;
                 selectedRectangle = new Rectangle(x,y, 1,1);
                 selectedPoint = new Point(x,y);

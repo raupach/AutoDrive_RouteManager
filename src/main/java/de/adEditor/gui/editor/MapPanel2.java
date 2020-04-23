@@ -182,6 +182,7 @@ public class MapPanel2 extends JPanel {
                 repaint();
             }
         }
+        lastMousePos = new Point(x,y);
     }
 
     private void mouseWheelMovedd(int wheelRotation) {

@@ -1,10 +1,12 @@
 package de.adEditor.gui.editor;
 
+import de.adEditor.gui.graph.GNode;
 import org.imgscalr.Scalr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
 public class BackgroundMapImage {
@@ -95,5 +97,33 @@ public class BackgroundMapImage {
         return rectangle;
     }
 
+    public GNode screenPosToWorldVertex(int x, int y) {
+        Point2D worldPos = screenPosToWorldPos (new Point (x, y));
+        return new GNode (worldPos);
+    }
 
+    public Point2D screenPosToWorldPos(Point point) {
+        Rectangle viewPort = getRectangle();
+        double scaleFactor = getScaleFactor();
+        double worldPosX = (point.x  + viewPort.x) / scaleFactor;
+        double worldPosY = (point.y  + viewPort.y) / scaleFactor;
+        return new Point2D.Double(worldPosX, worldPosY);
+    }
+
+
+    public Point worldVertexToScreenPos(GNode gNode) {
+        Rectangle viewPort = getRectangle();
+        double scaleFactor = getScaleFactor();
+        double screenPosX = (gNode.getX()*scaleFactor) - viewPort.x;
+        double screenPosY = (gNode.getY()*scaleFactor) - viewPort.y;
+        return new Point((int) screenPosX, (int) screenPosY);
+    }
+
+    public Point worldPosToScreenPos(Point2D p) {
+        Rectangle viewPort = getRectangle();
+        double scaleFactor = getScaleFactor();
+        double screenPosX = (p.getX()*scaleFactor) - viewPort.x;
+        double screenPosY = (p.getY()*scaleFactor) - viewPort.y;
+        return new Point((int) screenPosX, (int) screenPosY);
+    }
 }

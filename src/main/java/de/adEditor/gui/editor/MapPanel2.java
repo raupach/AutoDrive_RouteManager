@@ -182,8 +182,8 @@ public class MapPanel2 extends JPanel {
 
     private void mouseDraggedButton1(int x, int y) {
         if (editor.getEditorMode().equals(EditorMode.MOVE) && mapPanelMode.equals(MapPanelMode.DRAGGING_NODE)) {
-            Point2D lastMouseWorldPos = screenPosToWorldPos(lastMousePos);
-            Point2D currentMouseWorldPos = screenPosToWorldPos(new Point(x, y));
+            Point2D lastMouseWorldPos = backgroundMapImage.screenPosToWorldPos(lastMousePos);
+            Point2D currentMouseWorldPos = backgroundMapImage.screenPosToWorldPos(new Point(x, y));
             double dx =  currentMouseWorldPos.getX() - lastMouseWorldPos.getX();
             double dy = currentMouseWorldPos.getY() -lastMouseWorldPos.getY() ;
             getSelectedNodes().forEach(node-> {
@@ -192,7 +192,7 @@ public class MapPanel2 extends JPanel {
                 roadMap.getGraph().edgesOf(node).forEach(edge->{
                     GNode source = roadMap.getGraph().getEdgeSource(edge);
                     GNode target = roadMap.getGraph().getEdgeTarget(edge);
-                    edge.setMidpoint(midpoint(source, target));
+                    edge.setMidpoint(source, target);
                 });
             });
             repaint();
@@ -207,7 +207,6 @@ public class MapPanel2 extends JPanel {
     }
 
     private void mouseWheelMovedd(int wheelRotation) {
-//        LOG.debug("mouseWheelMovedd {}", wheelRotation);
         Rectangle rect1 = backgroundMapImage.getScaledRectangle();
 
 
@@ -230,12 +229,12 @@ public class MapPanel2 extends JPanel {
             if (mapPanelMode.equals(MapPanelMode.NONE)) {
                 mapPanelMode = MapPanelMode.DRAWING;
             }
-            GNode newVertex = findNodeAt(x, y).orElseGet(() -> screenPosToWorldVertex(x, y));
+            GNode newVertex = findNodeAt(x, y).orElseGet(() -> backgroundMapImage.screenPosToWorldVertex(x, y));
             Graph<GNode, GEdge> graph = roadMap.getGraph();
             graph.addVertex(newVertex);
             if (tempLastNode !=null) {
                 double d = Point2D.distance(tempLastNode.getX(), tempLastNode.getY(), newVertex.getX(), newVertex.getY());
-                graph.addEdge(tempLastNode, newVertex, new GEdge(midpoint(new Point2D.Double(tempLastNode.getX(), tempLastNode.getY()), new Point2D.Double(newVertex.getX(), newVertex.getY())), true));
+                graph.addEdge(tempLastNode, newVertex, new GEdge(tempLastNode, newVertex, true));
             }
             tempLastNode = newVertex;
             repaint();
@@ -253,44 +252,17 @@ public class MapPanel2 extends JPanel {
 
     private Set<GNode> findNodesInRect(Rectangle r) {
         return roadMap.getGraph().vertexSet().stream()
-                .filter(n -> r.contains(worldVertexToScreenPos(n)))
+                .filter(n -> r.contains(backgroundMapImage.worldVertexToScreenPos(n)))
                 .collect(Collectors.toSet());
     }
 
     private Set<GEdge> findEdgeMidpointInRect(Rectangle r) {
         return roadMap.getGraph().edgeSet().stream()
-                .filter(n -> r.contains(worldPosToScreenPos(n.getMidpoint())))
+                .filter(n -> r.contains(backgroundMapImage.worldPosToScreenPos(n.getMidpoint())))
                 .collect(Collectors.toSet());
     }
 
-    private GNode screenPosToWorldVertex(int x, int y) {
-        Point2D worldPos = screenPosToWorldPos (new Point (x, y));
-        return new GNode (worldPos);
-    }
 
-    private Point2D screenPosToWorldPos(Point point) {
-        Rectangle viewPort = backgroundMapImage.getRectangle();
-        double scaleFactor = backgroundMapImage.getScaleFactor();
-        double worldPosX = (point.x  + viewPort.x) / scaleFactor;
-        double worldPosY = (point.y  + viewPort.y) / scaleFactor;
-        return new Point2D.Double(worldPosX, worldPosY);
-    }
-
-    private Point worldVertexToScreenPos(GNode gNode) {
-        Rectangle viewPort = backgroundMapImage.getRectangle();
-        double scaleFactor = backgroundMapImage.getScaleFactor();
-        double screenPosX = (gNode.getX()*scaleFactor) - viewPort.x;
-        double screenPosY = (gNode.getY()*scaleFactor) - viewPort.y;
-        return new Point((int) screenPosX, (int) screenPosY);
-    }
-
-    private Point worldPosToScreenPos(Point2D p) {
-        Rectangle viewPort = backgroundMapImage.getRectangle();
-        double scaleFactor = backgroundMapImage.getScaleFactor();
-        double screenPosX = (p.getX()*scaleFactor) - viewPort.x;
-        double screenPosY = (p.getY()*scaleFactor) - viewPort.y;
-        return new Point((int) screenPosX, (int) screenPosY);
-    }
 
     private void mouseDraggedButton3(int x, int y) {
         if (mapPanelMode.equals(MapPanelMode.DRAWING)) {
@@ -334,8 +306,8 @@ public class MapPanel2 extends JPanel {
                 newVertex.setSelected(true);
                 graph.addVertex(newVertex);
                 graph.removeEdge(edge);
-                graph.addEdge(source, newVertex, new GEdge(midpoint(new Point2D.Double(source.getX(), source.getY()), new Point2D.Double(newVertex.getX(), newVertex.getY()))));
-                graph.addEdge(newVertex, target, new GEdge(midpoint(new Point2D.Double(newVertex.getX(), newVertex.getY()), new Point2D.Double(target.getX(), target.getY()))));
+                graph.addEdge(source, newVertex, new GEdge(source, newVertex));
+                graph.addEdge(newVertex, target, new GEdge(newVertex, target));
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else {
                 clearSelectedNodes();
@@ -371,7 +343,7 @@ public class MapPanel2 extends JPanel {
             int alpha = 127; // 50% transparent
             Color myColour = new Color(255, 0, 0, alpha);
             g.setColor(myColour);
-            Point p = worldVertexToScreenPos(touchedNode);
+            Point p = backgroundMapImage.worldVertexToScreenPos(touchedNode);
             g.fillRect(p.x-6, p.y-6, 12, 12);
         }
 
@@ -400,7 +372,7 @@ public class MapPanel2 extends JPanel {
                         g.setColor(Color.yellow);
                     }
 
-                    Point p = worldPosToScreenPos(midpoint);
+                    Point p = backgroundMapImage.worldPosToScreenPos(midpoint);
                     g.drawLine(p.x - 4, p.y, p.x + 4, p.y);
                     g.drawLine(p.x, p.y - 4, p.x, p.y + 4);
                 }
@@ -410,7 +382,7 @@ public class MapPanel2 extends JPanel {
         if (mapPanelMode.equals(MapPanelMode.DRAWING) && tempLastNode != null && mousePos != null) {
             ((Graphics2D) g).setStroke(stroke_2);
             g.setColor(Color.RED);
-            Point p = worldVertexToScreenPos(tempLastNode);
+            Point p = backgroundMapImage.worldVertexToScreenPos(tempLastNode);
             g.drawLine(p.x, p.y, mousePos.x, mousePos.y);
         }
 
@@ -424,8 +396,8 @@ public class MapPanel2 extends JPanel {
 
     private void drawEdge(Graphics g, GNode sourceNode, GNode targetNode) {
         GEdge edge = roadMap.getGraph().getEdge(sourceNode, targetNode);
-        Point sourcePoint = worldVertexToScreenPos(sourceNode);
-        Point targetPoint = worldVertexToScreenPos(targetNode);
+        Point sourcePoint = backgroundMapImage.worldVertexToScreenPos(sourceNode);
+        Point targetPoint = backgroundMapImage.worldVertexToScreenPos(targetNode);
         if (edge.isSelected()) {
             g.setColor(Color.RED);
         } else {
@@ -436,7 +408,7 @@ public class MapPanel2 extends JPanel {
     }
 
     private void drawVertex(Graphics g, GNode gNode) {
-        Point p = worldVertexToScreenPos(gNode);
+        Point p = backgroundMapImage.worldVertexToScreenPos(gNode);
         if (gNode.isSelected()) {
             g.setColor(Color.RED);
             g.fillRect(p.x-4, p.y-4, 8, 8);
@@ -539,7 +511,7 @@ public class MapPanel2 extends JPanel {
                     graph.removeAllEdges(incomingEdges);
                     graph.removeAllEdges(outgoingEdges);
                     graph.removeVertex(selectedNode);
-                    graph.addEdge(newSource, newTarget);
+                    graph.addEdge(newSource, newTarget, new GEdge(newSource, newTarget) );
                 } else {
                     graph.removeAllEdges(incomingEdges);
                     graph.removeAllEdges(outgoingEdges);
@@ -552,13 +524,13 @@ public class MapPanel2 extends JPanel {
         }
     }
 
-    private Point2D.Double midpoint(Point2D p1, Point2D p2) {
-        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
-    }
-
-    private Point2D.Double midpoint(GNode p1, GNode p2) {
-        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
-    }
+//    private Point2D.Double midpoint(Point2D p1, Point2D p2) {
+//        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
+//    }
+//
+//    private Point2D.Double midpoint(GNode p1, GNode p2) {
+//        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
+//    }
 
     public void reset() {
     }

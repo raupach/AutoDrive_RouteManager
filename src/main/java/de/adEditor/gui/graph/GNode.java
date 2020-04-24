@@ -1,52 +1,40 @@
 package de.adEditor.gui.graph;
 
+import javafx.geometry.Point3D;
+
 import java.awt.geom.Point2D;
 
+import static javafx.geometry.Point3D.ZERO;
+
 public class GNode {
-    private Double x, y, z;
     private boolean selected = false;
+    private Point3D point = ZERO;
 
     public GNode(){
     }
 
+    public Point2D getPoint2D() {
+        return new Point2D.Double(point.getX(), point.getY());
+    }
+
+    public Point3D getPoint() {
+        return point;
+    }
+
+    public void setPoint(Point3D point) {
+        this.point = point;
+    }
+
     public GNode(Double x, Double y, Double z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        point = new Point3D(x, y, z);
     }
 
     public GNode(Point2D point) {
-        x = point.getX();
-        y = point.getY();
+        this.point = new Point3D(point.getX(), point.getY(), 0);
     }
 
     public void setPos(Point2D position) {
-        x = position.getX();
-        y = position.getY();
-    }
-
-    public Double getX() {
-        return x;
-    }
-
-    public void setX(Double x) {
-        this.x = x;
-    }
-
-    public Double getY() {
-        return y;
-    }
-
-    public void setY(Double y) {
-        this.y = y;
-    }
-
-    public Double getZ() {
-        return z;
-    }
-
-    public void setZ(Double z) {
-        this.z = z;
+        this.point = new Point3D(point.getX(), point.getY(), this.point.getZ());
     }
 
     public boolean isSelected() {
@@ -57,4 +45,23 @@ public class GNode {
         this.selected = selected;
     }
 
+    public double getX() {
+        return point.getX();
+    }
+
+    public double getY() {
+        return point.getY();
+    }
+
+    public void setX(double x) {
+        point = new Point3D(x, point.getY(), point.getZ());
+    }
+
+    public void setY(double y) {
+        point = new Point3D(point.getX(), y, point.getZ());
+    }
+
+    public double getZ() {
+        return point.getZ();
+    }
 }

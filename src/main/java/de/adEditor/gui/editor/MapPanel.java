@@ -98,9 +98,9 @@ public class MapPanel extends JPanel{
                     GNode source = graph.getEdgeSource(e);
                     GNode target = graph.getEdgeTarget(e);
 
-                    Point2D nodePos = worldPosToScreenPos(source.getX(), source.getZ() );
-                    Point2D outPos = worldPosToScreenPos(target.getX(), target.getZ());
-                    drawArrowBetween(g, nodePos, outPos, false);
+//                    Point2D nodePos = worldPosToScreenPos(source.getX(), source.getZ() );
+//                    Point2D outPos = worldPosToScreenPos(target.getX(), target.getZ());
+//                    drawArrowBetween(g, nodePos, outPos, false);
 
                 });
 

@@ -11,13 +11,17 @@ public class GEdge extends DefaultEdge {
     public GEdge() {
     }
 
-    public GEdge(Point2D.Double midpoint) {
-        this.midpoint = midpoint;
+    public GEdge(GNode source, GNode target) {
+        this.midpoint = calcMidpoint(source, target);
     }
 
-    public GEdge(Point2D.Double midpoint, boolean selected) {
-        this.midpoint = midpoint;
+    public GEdge(GNode source, GNode target, boolean selected) {
+        this.midpoint = calcMidpoint(source, target);
         this.selected = selected;
+    }
+
+    private Point2D.Double calcMidpoint(GNode source, GNode target) {
+        return  new Point2D.Double ((source.getX() + target.getX()) / 2, (source.getY() + target.getY()) / 2) ;
     }
 
     public boolean isSelected() {
@@ -34,5 +38,9 @@ public class GEdge extends DefaultEdge {
 
     public void setMidpoint(Point2D midpoint) {
         this.midpoint = midpoint;
+    }
+
+    public void setMidpoint(GNode source, GNode target) {
+        midpoint = calcMidpoint(source, target);
     }
 }

@@ -11,6 +11,10 @@ public class GEdge extends DefaultEdge {
     public GEdge() {
     }
 
+    public GEdge(Point2D.Double midpoint) {
+        this.midpoint = midpoint;
+    }
+
     public GEdge(Point2D.Double midpoint, boolean selected) {
         this.midpoint = midpoint;
         this.selected = selected;

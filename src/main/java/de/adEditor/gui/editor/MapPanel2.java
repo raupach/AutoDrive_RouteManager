@@ -315,20 +315,35 @@ public class MapPanel2 extends JPanel {
             touchedNode = null;
 
             Optional<GNode> optionalGNode = findNodeAt(x, y);
-            if (optionalGNode.isPresent()){
+            Optional<GEdge> optionalGEdge = findEdgeMidpointAt(x, y);
+            if (optionalGNode.isPresent()) {
                 GNode node = optionalGNode.get();
                 if (!node.isSelected()) {
                     clearSelectedNodes();
                     node.setSelected(true);
                 }
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
+            } else if (optionalGEdge.isPresent()) {
+                clearSelectedNodes();
+                GEdge edge = optionalGEdge.get();
+                Graph<GNode, GEdge> graph = roadMap.getGraph();
+                GNode source = graph.getEdgeSource(edge);
+                GNode target = graph.getEdgeTarget(edge);
+                Point2D midpoint = edge.getMidpoint();
+                GNode newVertex = new GNode(midpoint);
+                newVertex.setSelected(true);
+                graph.addVertex(newVertex);
+                graph.removeEdge(edge);
+                graph.addEdge(source, newVertex, new GEdge(midpoint(new Point2D.Double(source.getX(), source.getY()), new Point2D.Double(newVertex.getX(), newVertex.getY()))));
+                graph.addEdge(newVertex, target, new GEdge(midpoint(new Point2D.Double(newVertex.getX(), newVertex.getY()), new Point2D.Double(target.getX(), target.getY()))));
+                mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else {
                 clearSelectedNodes();
                 mapPanelMode = MapPanelMode.SELECTING_RECTANGLE;
-                selectedRectangle = new Rectangle(x,y, 1,1);
-                selectedPoint = new Point(x,y);
+                selectedRectangle = new Rectangle(x, y, 1, 1);
+                selectedPoint = new Point(x, y);
             }
-            lastMousePos = new Point(x,y);
+            lastMousePos = new Point(x, y);
             setCursor(handCursor);
             repaint();
         }

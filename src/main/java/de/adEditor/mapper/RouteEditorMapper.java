@@ -56,14 +56,14 @@ public class RouteEditorMapper {
 
         Graph<GNode, GEdge> simpleGraph = new SimpleDirectedGraph<>(GEdge.class);
         waypointsResponseDto.getWaypoints().forEach(dto ->{
-            simpleGraph.addVertex(new GNode(dto.getX(), dto.getY(),dto.getZ()));
+            simpleGraph.addVertex(new GNode(dto.getX(), dto.getZ(), dto.getY()));
         });
 
         waypointsResponseDto.getWaypoints().forEach(dto ->{
-            Optional<GNode> v1 = findVertex(simpleGraph, dto.getX(), dto.getY(), dto.getZ());
+            Optional<GNode> v1 = findVertex(simpleGraph, dto.getX(), dto.getZ(), dto.getY());
             dto.getOut().forEach(i ->{
                 WaypointDto out = waypointsResponseDto.getWaypoints().get(i-1);
-                Optional<GNode> v2 = findVertex(simpleGraph, out.getX(), out.getY(), out.getZ());
+                Optional<GNode> v2 = findVertex(simpleGraph, out.getX(), out.getZ(), out.getY());
 
                 if (v1.isPresent() && v2.isPresent())
                 {
@@ -71,7 +71,7 @@ public class RouteEditorMapper {
                         LOG.warn("selfloop at: {}", v1.get());
                     }
                     else {
-                        DefaultEdge ret = simpleGraph.addEdge(v1.get(), v2.get());
+                        simpleGraph.addEdge(v1.get(), v2.get(), new GEdge(v1.get(), v2.get()));
                     }
                 }
             });

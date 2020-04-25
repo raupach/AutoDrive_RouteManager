@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
@@ -18,6 +19,7 @@ public class BackgroundMapImage {
     private Rectangle rectangle;
     private int currentZoomLevel = -1;
     private static final double[] scale = {1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75,};
+    private AffineTransform tx = new AffineTransform();
 
     public BackgroundMapImage(BufferedImage image) {
         this.originalImage = image;
@@ -107,23 +109,36 @@ public class BackgroundMapImage {
         double scaleFactor = getScaleFactor();
         double worldPosX = (point.x  + viewPort.x) / scaleFactor;
         double worldPosY = (point.y  + viewPort.y) / scaleFactor;
-        return new Point2D.Double(worldPosX, worldPosY);
+        return new Point2D.Double(worldPosX-1024, worldPosY-1024);
     }
 
 
     public Point worldVertexToScreenPos(GNode gNode) {
-        Rectangle viewPort = getRectangle();
-        double scaleFactor = getScaleFactor();
-        double screenPosX = (gNode.getX()*scaleFactor) - viewPort.x;
-        double screenPosY = (gNode.getY()*scaleFactor) - viewPort.y;
-        return new Point((int) screenPosX, (int) screenPosY);
+        return worldPosToScreenPos(gNode.getPoint2D());
     }
 
     public Point worldPosToScreenPos(Point2D p) {
         Rectangle viewPort = getRectangle();
         double scaleFactor = getScaleFactor();
-        double screenPosX = (p.getX()*scaleFactor) - viewPort.x;
-        double screenPosY = (p.getY()*scaleFactor) - viewPort.y;
+        double screenPosX = ((p.getX()+1024)*scaleFactor) - viewPort.x;
+        double screenPosY = ((p.getY()+1024)*scaleFactor) - viewPort.y;
         return new Point((int) screenPosX, (int) screenPosY);
+//        Point2D result = t(p);
+//        return new Point((int)result.getX(), (int)result.getY());
     }
+
+    protected Point2D t(Point2D p) {
+        Rectangle viewPort = getRectangle();
+        tx.setToTranslation(-viewPort.x, -viewPort.y);
+        AffineTransform transform = new AffineTransform();
+        transform.concatenate(AffineTransform.getScaleInstance(getScaleFactor(), getScaleFactor()));
+        transform.concatenate(tx);
+        return transform.transform(p, null);
+    }
+
+    protected Point2D translate(Point2D p) {
+        AffineTransform translate = AffineTransform.getTranslateInstance(-1024, -1024);
+        return translate.transform(p, null);
+    }
+
 }

@@ -30,8 +30,6 @@ public class MapPanel2 extends JPanel {
     private Rectangle selectedRectangle = null;
     private Point selectedPoint = null;
 
-
-
     private enum MapPanelMode {NONE, DRAGGING_NODE, SELECTING_RECTANGLE, DRAWING}
     private EditorFrame editor;
     private RoadMap roadMap = new RoadMap();
@@ -45,7 +43,6 @@ public class MapPanel2 extends JPanel {
     private final static Polygon arrowHead;
     private GNode touchedNode;
     private GEdge touchedEdgeMidpoint;
-    private Set<GNode> selectedNodes = new HashSet<>();
 
     static {
         arrowHead = new Polygon();
@@ -277,7 +274,6 @@ public class MapPanel2 extends JPanel {
     }
 
     private void mouseButton3Pressed(int x, int y) {
-        LOG.debug("mouseButton3Pressed");
         mapMove = true;
         lastMousePos = new Point(x,y);
     }
@@ -523,14 +519,6 @@ public class MapPanel2 extends JPanel {
             repaint();
         }
     }
-
-//    private Point2D.Double midpoint(Point2D p1, Point2D p2) {
-//        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
-//    }
-//
-//    private Point2D.Double midpoint(GNode p1, GNode p2) {
-//        return new Point2D.Double ((p1.getX() + p2.getX()) / 2, (p1.getY() + p2.getY()) / 2) ;
-//    }
 
     public void reset() {
     }

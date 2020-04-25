@@ -15,6 +15,7 @@ import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -82,7 +83,6 @@ public class EditorFrame extends JFrame {
 
     public EditorFrame() {
         super();
-//        setFocusable(true);
         setTitle(createTitle());
         setIconImage(loadIcon("/tractor.png"));
         setJMenuBar(createMenuBar());
@@ -278,6 +278,7 @@ public class EditorFrame extends JFrame {
         JPanel toolbar = new JPanel();
         toolbar.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
+        JButton openBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/open.png")));
         JToggleButton moveBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/move.png")));
         moveBtn.setSelected(true);
         JToggleButton autoNodeBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/autonode.png")));
@@ -285,6 +286,22 @@ public class EditorFrame extends JFrame {
         JToggleButton propBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/tag.png")));
         propBtn.setSelected(true);
         propBtn.addActionListener(actionEvent -> destinationTreePanel.setVisible(propBtn.isSelected()));
+
+        openBtn.addActionListener(actionEvent -> {
+            JFileChooser fc = new JFileChooser();
+            fc.setDialogTitle("Select AutoDrive Config");
+            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fc.setAcceptAllFileFilterUsed(false);
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("AutoDrive config", "xml");
+            fc.addChoosableFileFilter(filter);
+            int returnVal = fc.showOpenDialog(this);
+
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File fileName = fc.getSelectedFile();
+                loadConfigFile(fileName);
+            }
+        });
+
 
         moveBtn.addActionListener(actionEvent -> {
             if (moveBtn.isSelected()) {
@@ -313,17 +330,20 @@ public class EditorFrame extends JFrame {
         c.gridx = 0;
         c.gridy = 0;
         c.fill = GridBagConstraints.CENTER;
-        c.insets = new Insets( 4, 4, 0, 4);
+        c.insets = new Insets( 4, 4, 10, 4);
         c.anchor = GridBagConstraints.NORTH;
-        toolbar.add(moveBtn, c);
+        toolbar.add(openBtn, c);
+        c.insets = new Insets( 4, 4, 0, 4);
         c.gridy = 1;
-        toolbar.add(autoNodeBtn, c);
+        toolbar.add(moveBtn, c);
         c.gridy = 2;
-        toolbar.add(deleteBtn, c);
+        toolbar.add(autoNodeBtn, c);
         c.gridy = 3;
+        toolbar.add(deleteBtn, c);
+        c.gridy = 4;
         toolbar.add(propBtn, c);
 
-        c.gridy = 4;
+        c.gridy = 5;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
         toolbar.add(new Label(), c);

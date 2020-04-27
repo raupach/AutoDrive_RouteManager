@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<AutoDrive>
+    <Version>1.0.7.1</Version>
+    <Recalculation>false</Recalculation>
+    <HudX>0.829687</HudX>
+    <HudY>0.285926</HudY>
+    <HudShow>true</HudShow>
+    <lastSetSpeed>50.000000</lastSetSpeed>
+    <enableTrafficDetection>1.000000</enableTrafficDetection>
+    <guiScale>1.000000</guiScale>
+    <showTooltips>2.000000</showTooltips>
+    <useFastestRoute>1.000000</useFastestRoute>
+    <parkInField>2.000000</parkInField>
+    <lookAheadBraking>7.000000</lookAheadBraking>
+    <avoidMarkers>1.000000</avoidMarkers>
+    <refillSeedAndFertilizer>2.000000</refillSeedAndFertilizer>
+    <showNextPath>2.000000</showNextPath>
+    <unloadFillLevel>8.000000</unloadFillLevel>
+    <recalculationSpeed>2.000000</recalculationSpeed>
+    <smoothField>2.000000</smoothField>
+    <continueOnEmptySilo>1.000000</continueOnEmptySilo>
+    <lineHeight>1.000000</lineHeight>
+    <showHelp>2.000000</showHelp>
+    <shovelWidth>1.000000</shovelWidth>
+    <exitField>1.000000</exitField>
+    <pathFinderTime>3.000000</pathFinderTime>
+    <preCallLevel>7.000000</preCallLevel>
+    <autoConnectEnd>1.000000</autoConnectEnd>
+    <chaseCombine>1.000000</chaseCombine>
+    <restrictToField>2.000000</restrictToField>
+    <useBeaconLights>1.000000</useBeaconLights>
+    <fuelSaving>2.000000</fuelSaving>
+    <avoidFruit>2.000000</avoidFruit>
+    <useFolders>1.000000</useFolders>
+    <autoRefuel>2.000000</autoRefuel>
+    <autoRecalculate>1.000000</autoRecalculate>
+    <maxTriggerDistance>2.000000</maxTriggerDistance>
+    <autoConnectStart>2.000000</autoConnectStart>
+    <distributeToFolder>1.000000</distributeToFolder>
+    <lookAheadTurning>4.000000</lookAheadTurning>
+    <findDriver>2.000000</findDriver>
+    <pipeOffset>24.000000</pipeOffset>
+    <preCallDriver>1.000000</preCallDriver>
+    <driverWages>3.000000</driverWages>
+    <trailerOffset>21.000000</trailerOffset>
+    <mapMarkerDetour>1.000000</mapMarkerDetour>
+    <shovelHeight>26.000000</shovelHeight>
+    <experimentalFeatures>
+        <smootherDriving enabled="true"/>
+        <redLinePosition enabled="false"/>
+    </experimentalFeatures>
+    <Felsbrunn>
+        <waypoints>
+            <id>
+                1,2,3,4
+            </id>
+            <x>
+                -21.728,  -24.751,  -36.843,  -41.056
+            </x>
+            <y>
+                66.9,     66.957,   66.958,   66.123
+            </y>
+            <z>
+                191.719,  191.703,  192.051,  193.637
+            </z>
+            <out>
+                2;  3;  -1;  1
+            </out>
+            <incoming>
+                4;  1;  2;  3
+            </incoming>
+        </waypoints>
+        <mapmarker>
+            <mm1>
+                <id>1</id>
+                <name>Shop</name>
+                <group>All</group>
+            </mm1>
+            <mm2>
+                <id>4</id>
+                <name>Spinnery</name>
+                <group>Sell Points</group>
+            </mm2>
+        </mapmarker>
+    </Felsbrunn>
+    <followDistance>21.000000</followDistance>
+    <showMarkersOnMap>2.000000</showMarkersOnMap>
+</AutoDrive>

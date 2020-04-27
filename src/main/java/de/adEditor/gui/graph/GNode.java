@@ -9,6 +9,7 @@ import static javafx.geometry.Point3D.ZERO;
 public class GNode {
     private boolean selected = false;
     private Point3D point = ZERO;
+    private RoadMapMarker marker;
 
     public GNode(){
     }
@@ -63,5 +64,13 @@ public class GNode {
 
     public double getZ() {
         return point.getZ();
+    }
+
+    public RoadMapMarker getMarker() {
+        return marker;
+    }
+
+    public void setMarker(RoadMapMarker marker) {
+        this.marker = marker;
     }
 }

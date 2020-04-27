@@ -26,15 +26,15 @@ public class RouteEditorMapper {
 
     public RoadMap toRoadMap(WaypointsResponseDto waypointsResponseDto) {
         RoadMap roadMap = new RoadMap();
-        for (int i = 0; i < waypointsResponseDto.getWaypoints().size(); i++) {
-            WaypointDto waypointDto = waypointsResponseDto.getWaypoints().get(i);
-            MapNode mapNode = toMapNode(i, waypointDto, waypointsResponseDto.getWaypoints());
-            roadMap.addMapNode(mapNode);
-        }
-
-        roadMap.setMapMarkers(waypointsResponseDto.getMarkers().stream().map(m -> toMapMarker(m, waypointsResponseDto.getWaypoints().get(m.getWaypointIndex()))).collect(Collectors.toList()));
-
-        roadMap.setGraph(xx(waypointsResponseDto));
+//        for (int i = 0; i < waypointsResponseDto.getWaypoints().size(); i++) {
+//            WaypointDto waypointDto = waypointsResponseDto.getWaypoints().get(i);
+//            MapNode mapNode = toMapNode(i, waypointDto, waypointsResponseDto.getWaypoints());
+//            roadMap.addMapNode(mapNode);
+//        }
+//
+//        roadMap.setMapMarkers(waypointsResponseDto.getMarkers().stream().map(m -> toMapMarker(m, waypointsResponseDto.getWaypoints().get(m.getWaypointIndex()))).collect(Collectors.toList()));
+//
+//        roadMap.setGraph(xx(waypointsResponseDto));
 
         return roadMap;
     }

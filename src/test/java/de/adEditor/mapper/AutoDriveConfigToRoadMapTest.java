@@ -3,13 +3,13 @@ package de.adEditor.mapper;
 import de.adEditor.gui.editor.RoadMap;
 import de.adEditor.gui.graph.GEdge;
 import de.adEditor.gui.graph.GNode;
-import javafx.geometry.Point3D;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
@@ -45,10 +45,10 @@ public class AutoDriveConfigToRoadMapTest {
         assertEquals(4, vertex.size());
 
 
-        GNode node1 = vertex.stream().filter(g -> g.getPoint().equals(new Point3D(-21.728, 191.719, 66.9))).findFirst().orElseThrow();
-        GNode node2 = vertex.stream().filter(g -> g.getPoint().equals(new Point3D(-24.751, 191.703, 66.957))).findFirst().orElseThrow();
-        GNode node3 = vertex.stream().filter(g -> g.getPoint().equals(new Point3D(-36.843, 192.051, 66.958))).findFirst().orElseThrow();
-        GNode node4 = vertex.stream().filter(g -> g.getPoint().equals(new Point3D(-41.056, 193.637, 66.123))).findFirst().orElseThrow();
+        GNode node1 = vertex.stream().filter(g -> g.getPoint2D().equals(new Point2D.Double(-21.728, 191.719)) && g.getZ() == 66.9).findFirst().orElseThrow();
+        GNode node2 = vertex.stream().filter(g -> g.getPoint2D().equals(new Point2D.Double(-24.751, 191.703)) && g.getZ() == 66.957).findFirst().orElseThrow();
+        GNode node3 = vertex.stream().filter(g -> g.getPoint2D().equals(new Point2D.Double(-36.843, 192.051)) && g.getZ() == 66.958).findFirst().orElseThrow();
+        GNode node4 = vertex.stream().filter(g -> g.getPoint2D().equals(new Point2D.Double(-41.056, 193.637)) && g.getZ() == 66.123).findFirst().orElseThrow();
         assertNotNull(node1);
         assertNotNull(node2);
         assertNotNull(node3);

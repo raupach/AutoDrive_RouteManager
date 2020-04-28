@@ -30,6 +30,7 @@ public class MapPanel extends JPanel {
     private Rectangle selectedRectangle = null;
     private Point selectedPoint = null;
 
+
     private enum MapPanelMode {NONE, DRAGGING_NODE, SELECTING_RECTANGLE, DRAWING}
     private EditorFrame editor;
     private RoadMap roadMap = new RoadMap();
@@ -519,6 +520,36 @@ public class MapPanel extends JPanel {
             repaint();
         }
     }
+
+    public void joinNodes() {
+        List<GNode> nodes =  new ArrayList<>(getSelectedNodes());
+        if (nodes.size() == 2) {
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
+            GNode node1 = nodes.get(0);
+            GNode node2 = nodes.get(1);
+
+            graph.removeAllEdges(node1, node2);
+            graph.removeAllEdges(node2, node1);
+
+            List<GEdge>outg = new ArrayList<>(graph.outgoingEdgesOf(node2));
+            outg.forEach(edge ->{
+                GNode newTarget = graph.getEdgeTarget(edge);
+                graph.addEdge(node1, newTarget, new GEdge(node1, newTarget));
+                graph.removeEdge(edge);
+            });
+
+            List<GEdge>inEdges = new ArrayList<>(graph.incomingEdgesOf(node2));
+            inEdges.forEach(edge ->{
+                GNode newSource = graph.getEdgeSource(edge);
+                graph.addEdge(newSource, node1, new GEdge(newSource, node1));
+                graph.removeEdge(edge);
+            });
+
+            graph.removeVertex(node2);
+            repaint();
+        }
+    }
+
 
     public void reset() {
     }

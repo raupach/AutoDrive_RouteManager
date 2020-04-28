@@ -279,6 +279,7 @@ public class EditorFrame extends JFrame {
         moveBtn.setSelected(true);
         JToggleButton autoNodeBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/autonode.png")));
         JToggleButton deleteBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/delete.png")));
+        JButton joinBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/mergenodes.png")));
         JToggleButton propBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/tag.png")));
         propBtn.setSelected(true);
         propBtn.addActionListener(actionEvent -> destinationTreePanel.setVisible(propBtn.isSelected()));
@@ -330,6 +331,10 @@ public class EditorFrame extends JFrame {
             }
         });
 
+        joinBtn.addActionListener(actionEvent->{
+            mapPanel.joinNodes();
+        });
+
         c.gridx = 0;
         c.gridy = 0;
         c.fill = GridBagConstraints.CENTER;
@@ -344,9 +349,11 @@ public class EditorFrame extends JFrame {
         c.gridy = 3;
         toolbar.add(deleteBtn, c);
         c.gridy = 4;
+        toolbar.add(joinBtn, c);
+        c.gridy = 5;
         toolbar.add(propBtn, c);
 
-        c.gridy = 5;
+        c.gridy = 6;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
         toolbar.add(new Label(), c);

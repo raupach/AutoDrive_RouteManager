@@ -275,13 +275,24 @@ public class EditorFrame extends JFrame {
         toolbar.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         JButton openBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/open.png")));
+        JButton saveBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/save.png")));
         JToggleButton moveBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/move.png")));
         moveBtn.setSelected(true);
+        moveBtn.setToolTipText("Select and move objects");
+
         JToggleButton autoNodeBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/autonode.png")));
+        autoNodeBtn.setToolTipText("Draw lines and points");
+
         JToggleButton deleteBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/delete.png")));
         JButton joinBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/mergenodes.png")));
+        joinBtn.setToolTipText("Merge points");
+
+        JButton splitBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/unglueways.png")));
+        splitBtn.setToolTipText("Separate points");
+
         JToggleButton propBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/tag.png")));
         propBtn.setSelected(true);
+        propBtn.setToolTipText("Hide and show markers");
         propBtn.addActionListener(actionEvent -> destinationTreePanel.setVisible(propBtn.isSelected()));
 
         openBtn.addActionListener(actionEvent -> {
@@ -335,25 +346,36 @@ public class EditorFrame extends JFrame {
             mapPanel.joinNodes();
         });
 
+        splitBtn.addActionListener(actionEvent -> {
+            mapPanel.splitNode();
+        });
+
         c.gridx = 0;
         c.gridy = 0;
         c.fill = GridBagConstraints.CENTER;
-        c.insets = new Insets( 4, 4, 10, 4);
+        c.insets = new Insets( 4, 4, 0, 4);
         c.anchor = GridBagConstraints.NORTH;
         toolbar.add(openBtn, c);
-        c.insets = new Insets( 4, 4, 0, 4);
         c.gridy = 1;
-        toolbar.add(moveBtn, c);
+        c.insets = new Insets( 4, 4, 10, 4);
+        toolbar.add(saveBtn, c);
+        c.insets = new Insets( 4, 4, 0, 4);
         c.gridy = 2;
-        toolbar.add(autoNodeBtn, c);
+        toolbar.add(moveBtn, c);
         c.gridy = 3;
-        toolbar.add(deleteBtn, c);
+        toolbar.add(autoNodeBtn, c);
         c.gridy = 4;
-        toolbar.add(joinBtn, c);
+        toolbar.add(deleteBtn, c);
         c.gridy = 5;
+        toolbar.add(joinBtn, c);
+        c.gridy = 6;
+        toolbar.add(splitBtn, c);
+
+        c.insets = new Insets( 14, 4, 0, 4);
+        c.gridy = 7;
         toolbar.add(propBtn, c);
 
-        c.gridy = 6;
+        c.gridy = 8;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
         toolbar.add(new Label(), c);
@@ -661,10 +683,6 @@ public class EditorFrame extends JFrame {
         LOG.info("Done save");
     }
 
-    public void updateMapZoomFactor(int zoomFactor) {
-        mapPanel.setMapZoomFactor(zoomFactor);
-        mapPanel.repaint();
-    }
 
     private String createTitle() {
         StringBuilder sb = new StringBuilder();

@@ -14,8 +14,10 @@ import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MapPanel extends JPanel {
@@ -231,7 +233,6 @@ public class MapPanel extends JPanel {
             Graph<GNode, GEdge> graph = roadMap.getGraph();
             graph.addVertex(newVertex);
             if (tempLastNode !=null) {
-                double d = Point2D.distance(tempLastNode.getX(), tempLastNode.getY(), newVertex.getX(), newVertex.getY());
                 graph.addEdge(tempLastNode, newVertex, new GEdge(tempLastNode, newVertex, true));
             }
             tempLastNode = newVertex;
@@ -448,10 +449,6 @@ public class MapPanel extends JPanel {
         return roadMap;
     }
 
-    public void setMapZoomFactor(int zoomFactor) {
-
-    }
-
     public BackgroundMapImage getBackgroundMapImage() {
         return backgroundMapImage;
     }
@@ -531,6 +528,7 @@ public class MapPanel extends JPanel {
             graph.removeAllEdges(node1, node2);
             graph.removeAllEdges(node2, node1);
 
+            // copy to List cause of ConcurrentModificationException
             List<GEdge>outg = new ArrayList<>(graph.outgoingEdgesOf(node2));
             outg.forEach(edge ->{
                 GNode newTarget = graph.getEdgeTarget(edge);
@@ -538,6 +536,7 @@ public class MapPanel extends JPanel {
                 graph.removeEdge(edge);
             });
 
+            // copy to List cause of ConcurrentModificationException
             List<GEdge>inEdges = new ArrayList<>(graph.incomingEdgesOf(node2));
             inEdges.forEach(edge ->{
                 GNode newSource = graph.getEdgeSource(edge);
@@ -549,6 +548,35 @@ public class MapPanel extends JPanel {
             repaint();
         }
     }
+
+    public void splitNode() {
+        List<GNode> nodes =  new ArrayList<>(getSelectedNodes());
+        if (nodes.size() == 1) {
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
+            GNode node = nodes.get(0);
+
+            List<GEdge>outg = new ArrayList<>(graph.outgoingEdgesOf(node));
+            outg.forEach(edge -> {
+                GNode target = graph.getEdgeTarget(edge);
+                graph.removeEdge(edge);
+                GNode newNode = new GNode(node.getX(), node.getY(), node.getZ());
+                graph.addVertex(newNode);
+                graph.addEdge(newNode, target, new GEdge(newNode, target));
+            });
+
+            List<GEdge>inEdges = new ArrayList<>(graph.incomingEdgesOf(node));
+            inEdges.forEach(edge -> {
+                GNode source = graph.getEdgeSource(edge);
+                graph.removeEdge(edge);
+                GNode newNode = new GNode(node.getX(), node.getY(), node.getZ());
+                graph.addVertex(newNode);
+                graph.addEdge(source, newNode, new GEdge(source, newNode));
+            });
+
+            graph.removeVertex(node);
+        }
+    }
+
 
 
     public void reset() {

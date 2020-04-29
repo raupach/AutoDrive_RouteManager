@@ -18,7 +18,7 @@ public class BackgroundMapImage {
     private BufferedImage scaledImage;
     private Rectangle rectangle;
     private int currentZoomLevel = -1;
-    private static final double[] scale = {1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75,};
+    private static final double[] scale = {1, 2.5, 5, 7.5, 10, 12.5};
     private AffineTransform tx = new AffineTransform();
 
     public BackgroundMapImage(BufferedImage image) {
@@ -36,8 +36,8 @@ public class BackgroundMapImage {
     public void zoom(int level) {
         long start = System.currentTimeMillis();
         int newZoomLevel;
-        if (currentZoomLevel + level >= 20) {
-            newZoomLevel = 19;
+        if (currentZoomLevel + level >= scale.length) {
+            newZoomLevel = scale.length -1;
         } else if (currentZoomLevel + level < 0) {
             newZoomLevel = 0;
         } else {

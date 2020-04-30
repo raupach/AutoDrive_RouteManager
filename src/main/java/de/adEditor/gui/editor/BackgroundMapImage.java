@@ -123,22 +123,6 @@ public class BackgroundMapImage {
         double screenPosX = ((p.getX()+1024)*scaleFactor) - viewPort.x;
         double screenPosY = ((p.getY()+1024)*scaleFactor) - viewPort.y;
         return new Point((int) screenPosX, (int) screenPosY);
-//        Point2D result = t(p);
-//        return new Point((int)result.getX(), (int)result.getY());
-    }
-
-    protected Point2D t(Point2D p) {
-        Rectangle viewPort = getRectangle();
-        tx.setToTranslation(-viewPort.x, -viewPort.y);
-        AffineTransform transform = new AffineTransform();
-        transform.concatenate(AffineTransform.getScaleInstance(getScaleFactor(), getScaleFactor()));
-        transform.concatenate(tx);
-        return transform.transform(p, null);
-    }
-
-    protected Point2D translate(Point2D p) {
-        AffineTransform translate = AffineTransform.getTranslateInstance(-1024, -1024);
-        return translate.transform(p, null);
     }
 
 }

@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
@@ -19,7 +18,6 @@ public class BackgroundMapImage {
     private Rectangle rectangle;
     private int currentZoomLevel = -1;
     private static final double[] scale = {1, 2.5, 5, 7.5, 10, 12.5};
-    private AffineTransform tx = new AffineTransform();
 
     public BackgroundMapImage(BufferedImage image) {
         this.originalImage = image;

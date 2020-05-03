@@ -465,7 +465,6 @@ public class EditorFrame extends JFrame {
             mapPanel.setBackgroundMapImage(new BackgroundMapImage(image));
         }
         mapPanel.setRoadMap(roadMap);
-        mapPanel.reset();
         mapPanel.repaint();
         tabPane.setSelectedIndex(0);
     }

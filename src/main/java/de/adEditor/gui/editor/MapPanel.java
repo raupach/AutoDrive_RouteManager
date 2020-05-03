@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,8 @@ public class MapPanel extends JPanel {
     private static final String ESCAPE_KEY = "ESCAPE_KEY";
     private static final String BACKSPACE_KEY = "BACKSPACE_KEY";
     private static final String DELETE_KEY = "DELETE_KEY";
+    private static final String PLUS_KEY = "PLUS_KEY";
+    private static final String MINUS_KEY = "MINUS_KEY";
     private static Logger LOG = LoggerFactory.getLogger(MapPanel.class);
 
     private static final Cursor handCursor = new Cursor(Cursor.HAND_CURSOR);
@@ -43,19 +46,12 @@ public class MapPanel extends JPanel {
     private GNode tempLastNode;
     private MapPanelMode mapPanelMode = MapPanelMode.NONE;
     private AffineTransform tx = new AffineTransform();
-    private final static Polygon arrowHead;
     private GNode touchedNode;
     private GEdge touchedEdgeMidpoint;
 
-    static {
-        arrowHead = new Polygon();
-//        arrowHead.addPoint(0, 5);
-//        arrowHead.addPoint(-5, -5);
-//        arrowHead.addPoint(5, -5);
-        arrowHead.addPoint(0, 0);
-        arrowHead.addPoint(-5, -15);
-        arrowHead.addPoint(5, -15);
-    }
+    private ArrowHead arrowHead = new ArrowHead();
+    private static final double[] arrowHeadScale = { 0.1, 0.5, 0.6, 0.7, 0.8, 1};
+
 
     public MapPanel(EditorFrame editor) {
         this.editor = editor;
@@ -165,6 +161,22 @@ public class MapPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 delete();
+            }
+        });
+        iMap.put(KeyStroke.getKeyStroke("PLUS"), PLUS_KEY);
+        aMap.put(PLUS_KEY, new AbstractAction(){
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                backgroundMapImage.zoom(1);
+                repaint();
+            }
+        });
+        iMap.put(KeyStroke.getKeyStroke("MINUS"), MINUS_KEY);
+        aMap.put(MINUS_KEY, new AbstractAction(){
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                backgroundMapImage.zoom(-1);
+                repaint();
             }
         });
     }
@@ -396,23 +408,34 @@ public class MapPanel extends JPanel {
         GEdge edge = roadMap.getGraph().getEdge(sourceNode, targetNode);
         Point sourcePoint = backgroundMapImage.worldVertexToScreenPos(sourceNode);
         Point targetPoint = backgroundMapImage.worldVertexToScreenPos(targetNode);
-        if (edge.isSelected()) {
-            g.setColor(Color.RED);
-        } else {
-            g.setColor(Color.GREEN);
+        Rectangle r = backgroundMapImage.getRectangle();
+        if (isInView(r, sourcePoint) || isInView(r, targetPoint)) {
+            if (edge.isSelected()) {
+                g.setColor(Color.RED);
+            } else {
+                g.setColor(Color.GREEN);
+            }
+            g.drawLine(sourcePoint.x, sourcePoint.y, targetPoint.x, targetPoint.y);
+            drawArrowHead((Graphics2D) g, sourcePoint, targetPoint);
         }
-        g.drawLine(sourcePoint.x, sourcePoint.y, targetPoint.x, targetPoint.y);
-        drawArrowHead((Graphics2D) g, sourcePoint, targetPoint);
+    }
+
+    private boolean isInView (Rectangle rectangle, Point point) {
+        if (point.x > 0 && point.x < rectangle.getWidth() && point.y > 0 && point.y < rectangle.getHeight()) {
+            return true;
+        }
+        return false;
     }
 
     private void drawVertex(Graphics g, GNode gNode) {
         Point p = backgroundMapImage.worldVertexToScreenPos(gNode);
-        if (gNode.isSelected()) {
-            g.setColor(Color.RED);
-            g.fillRect(p.x-4, p.y-4, 8, 8);
-        }
-        else {
-            g.drawRect(p.x - 2, p.y - 2, 4, 4);
+        if (isInView(backgroundMapImage.getRectangle(), p)) {
+            if (gNode.isSelected()) {
+                g.setColor(Color.RED);
+                g.fillRect(p.x - 4, p.y - 4, 8, 8);
+            } else {
+                g.drawRect(p.x - 2, p.y - 2, 4, 4);
+            }
         }
     }
 
@@ -422,22 +445,12 @@ public class MapPanel extends JPanel {
         double angle = Math.atan2(p2.y-p1.y, p2.x-p1.x);
         tx.translate(p2.x, p2.y);
         tx.rotate((angle-Math.PI/2d));
+        int l = backgroundMapImage.getZoomLevel();
+        tx.scale(arrowHeadScale[l], arrowHeadScale[l]);
 
         Graphics2D g = (Graphics2D) g2d.create();
         g.setTransform(tx);
-        g.fill(arrowHead);
-        g.dispose();
-    }
-
-    private void drawArrowHead(Graphics2D g2d, GNode p1, GNode p2) {
-        tx.setToIdentity();
-        double angle = Math.atan2(p2.getY()-p1.getY(), p2.getX()-p1.getX());
-        tx.translate(p2.getX(), p2.getY());
-        tx.rotate((angle-Math.PI/2d));
-
-        Graphics2D g = (Graphics2D) g2d.create();
-        g.setTransform(tx);
-        g.fill(arrowHead);
+        g.draw(arrowHead);
         g.dispose();
     }
 
@@ -578,7 +591,13 @@ public class MapPanel extends JPanel {
     }
 
 
+    public class ArrowHead extends Path2D.Double {
 
-    public void reset() {
+        public ArrowHead() {
+            moveTo(-4, -15);
+            lineTo(0, 0);
+            lineTo(4, -15);
+        }
+
     }
 }

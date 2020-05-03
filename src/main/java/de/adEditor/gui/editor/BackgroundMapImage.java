@@ -92,6 +92,9 @@ public class BackgroundMapImage {
         return scale[currentZoomLevel];
     }
 
+    public int getZoomLevel() {
+        return currentZoomLevel;
+    }
 
     public Rectangle getRectangle() {
         return rectangle;

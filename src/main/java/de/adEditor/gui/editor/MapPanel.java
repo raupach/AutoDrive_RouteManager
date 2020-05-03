@@ -357,7 +357,7 @@ public class MapPanel extends JPanel {
             g.fillRect(p.x-6, p.y-6, 12, 12);
         }
 
-
+        // draw edge (arrow) and vertex (rectangle)
         for (GNode p : roadMap.getGraph().vertexSet()) {
             roadMap.getGraph().outgoingEdgesOf(p).forEach(outEdge -> {
                 GNode sourceNode = roadMap.getGraph().getEdgeSource(outEdge);
@@ -370,6 +370,7 @@ public class MapPanel extends JPanel {
             drawVertex(g, p);
         }
 
+        // draw cross on edge midpoint
         if (editor.getEditorMode().equals(EditorMode.MOVE)) {
             g.setColor(Color.yellow);
             ((Graphics2D) g).setStroke(stroke_1);
@@ -383,8 +384,10 @@ public class MapPanel extends JPanel {
                     }
 
                     Point p = backgroundMapImage.worldPosToScreenPos(midpoint);
-                    g.drawLine(p.x - 4, p.y, p.x + 4, p.y);
-                    g.drawLine(p.x, p.y - 4, p.x, p.y + 4);
+                    if (isInView(backgroundMapImage.getRectangle(), p) && isEdgeLongEnough(edge)) {
+                        g.drawLine(p.x - 4, p.y, p.x + 4, p.y);
+                        g.drawLine(p.x, p.y - 4, p.x, p.y + 4);
+                    }
                 }
             });
         }
@@ -404,6 +407,18 @@ public class MapPanel extends JPanel {
         LOG.debug("paintComponent end {}ms.", System.currentTimeMillis()-start);
     }
 
+    /**
+     * Is the edge long enough to  draw a cross?
+     *
+     * @param edge the edge to check
+     * @return true or false
+     */
+    private boolean isEdgeLongEnough(GEdge edge) {
+        Point source = backgroundMapImage.worldVertexToScreenPos(roadMap.getGraph().getEdgeSource(edge));
+        Point target = backgroundMapImage.worldVertexToScreenPos(roadMap.getGraph().getEdgeTarget(edge));
+        return source.distance(new Point2D.Double(target.x, target.y)) > 50;
+    }
+
     private void drawEdge(Graphics g, GNode sourceNode, GNode targetNode) {
         GEdge edge = roadMap.getGraph().getEdge(sourceNode, targetNode);
         Point sourcePoint = backgroundMapImage.worldVertexToScreenPos(sourceNode);
@@ -420,11 +435,15 @@ public class MapPanel extends JPanel {
         }
     }
 
+    /**
+     * check if point is visible on the current screen.
+     *
+     * @param rectangle screen rectange
+     * @param point point to check
+     * @return true or false
+     */
     private boolean isInView (Rectangle rectangle, Point point) {
-        if (point.x > 0 && point.x < rectangle.getWidth() && point.y > 0 && point.y < rectangle.getHeight()) {
-            return true;
-        }
-        return false;
+        return point.x > 0 && point.x < rectangle.getWidth() && point.y > 0 && point.y < rectangle.getHeight();
     }
 
     private void drawVertex(Graphics g, GNode gNode) {

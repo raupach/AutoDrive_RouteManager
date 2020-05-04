@@ -7,6 +7,7 @@ import java.awt.geom.Point2D;
 public class GEdge extends DefaultEdge {
     private boolean selected = false;
     private Point2D midpoint = null;
+    private boolean dual = false;
 
     public GEdge() {
     }
@@ -42,5 +43,13 @@ public class GEdge extends DefaultEdge {
 
     public void setMidpoint(GNode source, GNode target) {
         midpoint = calcMidpoint(source, target);
+    }
+
+    public boolean isDual() {
+        return dual;
+    }
+
+    public void setDual(boolean dual) {
+        this.dual = dual;
     }
 }

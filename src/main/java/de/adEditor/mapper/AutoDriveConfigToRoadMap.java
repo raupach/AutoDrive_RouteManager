@@ -142,7 +142,13 @@ public class AutoDriveConfigToRoadMap {
                     if (source.equals(target)) {
                         LOG.warn("selfloop at: {}", source);
                     } else {
-                        graph.addEdge(source, target, new GEdge(source, target));
+                        // is there already an edge in opposite direction?
+                        GEdge existingEdge = graph.getEdge(target, source);
+                        if (existingEdge!= null) {
+                            existingEdge.setDual(true);
+                        } else {
+                            graph.addEdge(source, target, new GEdge(source, target));
+                        }
                     }
                 }
             }

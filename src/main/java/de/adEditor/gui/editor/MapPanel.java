@@ -250,8 +250,12 @@ public class MapPanel extends JPanel {
             tempLastNode = newVertex;
             repaint();
         } else if (editor.getEditorMode().equals(EditorMode.MOVE)) {
+            Graph<GNode, GEdge> graph = roadMap.getGraph();
             if (mapPanelMode.equals(MapPanelMode.SELECTING_RECTANGLE) && selectedRectangle != null) {
-                findNodesInRect (selectedRectangle).forEach(n -> n.setSelected(true));
+                findNodesInRect (selectedRectangle).forEach(n -> {
+                    n.setSelected(true);
+                    graph.edgesOf(n).forEach(edge -> edge.setSelected(true));
+                });
                 selectedRectangle = null;
             }
             mapPanelMode = MapPanelMode.NONE;
@@ -298,6 +302,7 @@ public class MapPanel extends JPanel {
 
             Optional<GNode> optionalGNode = findNodeAt(x, y);
             Optional<GEdge> optionalGEdge = findEdgeMidpointAt(x, y);
+            Optional<GEdge> optionalIntersetionEdge = findIntersectionEdge(x,y);
             if (optionalGNode.isPresent()) {
                 GNode node = optionalGNode.get();
                 if (!node.isSelected()) {
@@ -319,6 +324,9 @@ public class MapPanel extends JPanel {
                 graph.addEdge(source, newVertex, new GEdge(source, newVertex));
                 graph.addEdge(newVertex, target, new GEdge(newVertex, target));
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
+            } else if (optionalIntersetionEdge.isPresent()) {
+                clearSelectedNodes();
+                optionalIntersetionEdge.get().setSelected(true);
             } else {
                 clearSelectedNodes();
                 mapPanelMode = MapPanelMode.SELECTING_RECTANGLE;
@@ -331,8 +339,22 @@ public class MapPanel extends JPanel {
         }
     }
 
+    private Optional<GEdge> findIntersectionEdge(int x, int y) {
+        Line2D line1 = new Line2D.Double(x - 5, y - 5, x + 5, y + 5);
+        Line2D line2 = new Line2D.Double(x + 5, y - 5, x - 5, y + 5);
+
+        Graph<GNode, GEdge> grapgh = roadMap.getGraph();
+        return roadMap.getGraph().edgeSet().stream().filter(edge -> {
+            Point source = backgroundMapImage.worldVertexToScreenPos(grapgh.getEdgeSource(edge));
+            Point target = backgroundMapImage.worldVertexToScreenPos(grapgh.getEdgeTarget(edge));
+            return line1.intersectsLine(source.getX(), source.getY(), target.getX(), target.getY()) ||
+                    line2.intersectsLine(source.getX(), source.getY(), target.getX(), target.getY());
+        }).findFirst();
+    }
+
     private void clearSelectedNodes() {
         roadMap.getGraph().vertexSet().forEach(node->node.setSelected(false));
+        roadMap.getGraph().edgeSet().forEach(edge->edge.setSelected(false));
     }
 
     private Set<GNode> getSelectedNodes() {
@@ -408,7 +430,7 @@ public class MapPanel extends JPanel {
     }
 
     /**
-     * Is the edge long enough to  draw a cross?
+     * Is the edge long enough to draw a cross?
      *
      * @param edge the edge to check
      * @return true or false
@@ -427,11 +449,16 @@ public class MapPanel extends JPanel {
         if (isInView(r, sourcePoint) || isInView(r, targetPoint)) {
             if (edge.isSelected()) {
                 g.setColor(Color.RED);
+            } else if (edge.isDual()) {
+                g.setColor(Color.BLUE);
             } else {
                 g.setColor(Color.GREEN);
             }
             g.drawLine(sourcePoint.x, sourcePoint.y, targetPoint.x, targetPoint.y);
             drawArrowHead((Graphics2D) g, sourcePoint, targetPoint);
+            if (edge.isDual()) {
+                drawArrowHead((Graphics2D) g, targetPoint, sourcePoint);
+            }
         }
     }
 
@@ -492,8 +519,11 @@ public class MapPanel extends JPanel {
     public void escape() {
         if (mapPanelMode.equals(MapPanelMode.DRAWING)){
             mapPanelMode = MapPanelMode.NONE;
-            roadMap.getGraph().edgeSet().forEach(e->e.setSelected(false));
+            clearSelectedNodes();
             tempLastNode = null;
+            repaint();
+        } else if (mapPanelMode.equals(MapPanelMode.NONE)) {
+            clearSelectedNodes();
             repaint();
         }
     }

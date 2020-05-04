@@ -639,6 +639,31 @@ public class MapPanel extends JPanel {
         }
     }
 
+    public void flipEdge() {
+        List<GEdge> edges = new ArrayList<>(getSelectedEdges());
+        Graph<GNode, GEdge> graph = roadMap.getGraph();
+        edges.parallelStream()
+                .filter(p -> !p.isDual())
+                .forEach(edge -> {
+                    GNode source = graph.getEdgeSource(edge);
+                    GNode target = graph.getEdgeTarget(edge);
+                    graph.removeEdge(edge);
+                    graph.addEdge(target, source, new GEdge(target, source, true));
+                });
+        repaint();
+    }
+
+    public void flipTwoWay() {
+        Set<GEdge> edges = getSelectedEdges();
+        edges.forEach(edge -> edge.setDual(!edge.isDual()));
+        clearSelectedNodes();
+        repaint();
+    }
+
+    private Set<GEdge> getSelectedEdges() {
+        return roadMap.getGraph().edgeSet().parallelStream().filter(GEdge::isSelected).collect(Collectors.toSet());
+    }
+
 
     public class ArrowHead extends Path2D.Double {
 

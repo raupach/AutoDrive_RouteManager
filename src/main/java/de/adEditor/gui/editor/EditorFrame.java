@@ -290,6 +290,12 @@ public class EditorFrame extends JFrame {
         JButton splitBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/unglueways.png")));
         splitBtn.setToolTipText("Separate points");
 
+        JButton flipBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/wayflip.png")));
+        flipBtn.setToolTipText("Flip direction");
+
+        JButton twoWayBtn = new JButton(new ImageIcon(IconHelper.getImageUrl("toolbar/conflict.png")));
+        twoWayBtn.setToolTipText("Flip dual/single way");
+
         JToggleButton propBtn = new JToggleButton(new ImageIcon(IconHelper.getImageUrl("toolbar/tag.png")));
         propBtn.setSelected(true);
         propBtn.setToolTipText("Hide and show markers");
@@ -342,13 +348,10 @@ public class EditorFrame extends JFrame {
             }
         });
 
-        joinBtn.addActionListener(actionEvent->{
-            mapPanel.joinNodes();
-        });
-
-        splitBtn.addActionListener(actionEvent -> {
-            mapPanel.splitNode();
-        });
+        joinBtn.addActionListener(actionEvent-> mapPanel.joinNodes());
+        splitBtn.addActionListener(actionEvent ->   mapPanel.splitNode());
+        flipBtn.addActionListener(actionEvent -> mapPanel.flipEdge());
+        twoWayBtn.addActionListener(actionEvent -> mapPanel.flipTwoWay());
 
         c.gridx = 0;
         c.gridy = 0;
@@ -370,12 +373,16 @@ public class EditorFrame extends JFrame {
         toolbar.add(joinBtn, c);
         c.gridy = 6;
         toolbar.add(splitBtn, c);
+        c.gridy = 7;
+        toolbar.add(flipBtn, c);
+        c.gridy = 8;
+        toolbar.add(twoWayBtn, c);
 
         c.insets = new Insets( 14, 4, 0, 4);
-        c.gridy = 7;
+        c.gridy = 9;
         toolbar.add(propBtn, c);
 
-        c.gridy = 8;
+        c.gridy = 10;
         c.weighty = 1;
         c.fill = GridBagConstraints.BOTH;
         toolbar.add(new Label(), c);

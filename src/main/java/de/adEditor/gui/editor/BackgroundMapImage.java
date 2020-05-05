@@ -31,11 +31,11 @@ public class BackgroundMapImage {
         g.drawImage(cutoutImage, 0, 0, rectangle.width, rectangle.height, null);
     }
 
-    public void zoom(int level) {
+    public boolean zoom(int level) {
         long start = System.currentTimeMillis();
         int newZoomLevel;
         if (currentZoomLevel + level >= scale.length) {
-            newZoomLevel = scale.length -1;
+            newZoomLevel = scale.length - 1;
         } else if (currentZoomLevel + level < 0) {
             newZoomLevel = 0;
         } else {
@@ -48,8 +48,12 @@ public class BackgroundMapImage {
             double w = originalImage.getWidth() * scaleFactor;
             double h = originalImage.getHeight() * scaleFactor;
             scaledImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC, (int) w, (int) h);
+            LOG.info("zoom currentZoomLevel: {} in {}ms", currentZoomLevel, System.currentTimeMillis() - start);
+            return true;
+        } else {
+            LOG.info("zoom not changed currentZoomLevel: {} in {}ms", currentZoomLevel, System.currentTimeMillis() - start);
+            return false;
         }
-        LOG.info("zoom currentZoomLevel: {} in {}ms", currentZoomLevel, System.currentTimeMillis() - start);
     }
 
     public void move(int x, int y, int dx, int dy) {

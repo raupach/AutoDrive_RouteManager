@@ -11,6 +11,11 @@ public class RoadMapGroup {
     public RoadMapGroup() {
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
     public RoadMapGroup(String name) {
         this.name = name;
     }

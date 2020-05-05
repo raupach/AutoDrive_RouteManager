@@ -3,6 +3,8 @@ package de.adEditor.gui.editor;
 
 import de.adEditor.gui.graph.GEdge;
 import de.adEditor.gui.graph.GNode;
+import de.adEditor.gui.graph.RoadMapMarker;
+import de.adEditor.helper.IconHelper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jgrapht.Graph;
 import org.slf4j.Logger;
@@ -52,6 +54,15 @@ public class MapPanel extends JPanel {
     private ArrowHead arrowHead = new ArrowHead();
     private static final double[] arrowHeadScale = { 0.1, 0.5, 0.6, 0.7, 0.8, 1};
 
+    private static final Image markerImage = IconHelper.loadImage("/icons/marker.png");
+    private static final Font[] markerFontScale = {
+            new Font("default", Font.BOLD, 9),
+            new Font("default", Font.BOLD, 9),
+            new Font("default", Font.BOLD, 11),
+            new Font("default", Font.BOLD, 11),
+            new Font("default", Font.BOLD, 17),
+            new Font("default", Font.BOLD, 17)
+    };
 
     public MapPanel(EditorFrame editor) {
         this.editor = editor;
@@ -92,10 +103,10 @@ public class MapPanel extends JPanel {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                mousePos = e.getPoint();
                 if (editor.getEditorMode().equals(EditorMode.DRAW)) {
                     setCursor(crosshairCursor);
                     if (mapPanelMode.equals(MapPanelMode.DRAWING)) {
-                        mousePos = e.getPoint();
                         repaint();
                     }
                 }
@@ -167,16 +178,14 @@ public class MapPanel extends JPanel {
         aMap.put(PLUS_KEY, new AbstractAction(){
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                backgroundMapImage.zoom(1);
-                repaint();
+                mouseWheelMovedd(-1);
             }
         });
         iMap.put(KeyStroke.getKeyStroke("MINUS"), MINUS_KEY);
         aMap.put(MINUS_KEY, new AbstractAction(){
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                backgroundMapImage.zoom(-1);
-                repaint();
+                mouseWheelMovedd(1);
             }
         });
     }
@@ -219,16 +228,12 @@ public class MapPanel extends JPanel {
     }
 
     private void mouseWheelMovedd(int wheelRotation) {
-        Rectangle rect1 = backgroundMapImage.getScaledRectangle();
-
-
-        backgroundMapImage.zoom(wheelRotation*-1);
-        Rectangle rect2 = backgroundMapImage.getScaledRectangle();
-        int dx = (rect2.width - rect1.width) / 2;
-        int dy = (rect2.height - rect1.height) / 2;
-
-        backgroundMapImage.move(dx, dy, this.getWidth(), this.getHeight());
-        repaint();
+        Point2D beforeZoom = backgroundMapImage.screenPosToWorldPos(mousePos);
+        if (backgroundMapImage.zoom(wheelRotation*-1)) {
+            Point afterZoom = backgroundMapImage.worldPosToScreenPos(beforeZoom);
+            movePointToMid(afterZoom);
+            repaint();
+        }
     }
 
     private void mouseButton3Released(int x, int y) {
@@ -371,6 +376,7 @@ public class MapPanel extends JPanel {
         Stroke stroke_1 = new BasicStroke(1);
         Stroke stroke_2 = new BasicStroke(2);
 
+        // highlight touched node (mouse over)
         if (touchedNode!= null) {
             int alpha = 127; // 50% transparent
             Color myColour = new Color(255, 0, 0, alpha);
@@ -384,18 +390,21 @@ public class MapPanel extends JPanel {
             roadMap.getGraph().outgoingEdgesOf(p).forEach(outEdge -> {
                 GNode sourceNode = roadMap.getGraph().getEdgeSource(outEdge);
                 GNode targetNode = roadMap.getGraph().getEdgeTarget(outEdge);
-                ((Graphics2D) g).setStroke(stroke_2);
+                g2.setStroke(stroke_2);
                 drawEdge(g, sourceNode, targetNode);
             });
-            g.setColor(Color.yellow);
-            ((Graphics2D) g).setStroke(stroke_1);
-            drawVertex(g, p);
+            g2.setColor(Color.yellow);
+            g2.setStroke(stroke_1);
+            drawVertex(g2, p);
         }
+
+        // draw marker
+        roadMap.getGraph().vertexSet().forEach(node -> drawMarker(g2, node));
 
         // draw cross on edge midpoint
         if (editor.getEditorMode().equals(EditorMode.MOVE)) {
             g.setColor(Color.yellow);
-            ((Graphics2D) g).setStroke(stroke_1);
+            g2.setStroke(stroke_1);
             roadMap.getGraph().edgeSet().forEach(edge -> {
                 Point2D midpoint = edge.getMidpoint();
                 if (midpoint != null) {
@@ -414,19 +423,40 @@ public class MapPanel extends JPanel {
             });
         }
 
+        // draw path while in DRAWING-Mode
         if (mapPanelMode.equals(MapPanelMode.DRAWING) && tempLastNode != null && mousePos != null) {
-            ((Graphics2D) g).setStroke(stroke_2);
+            g2.setStroke(stroke_2);
             g.setColor(Color.RED);
             Point p = backgroundMapImage.worldVertexToScreenPos(tempLastNode);
             g.drawLine(p.x, p.y, mousePos.x, mousePos.y);
         }
 
+        // draw rectangle for selection
         if (mapPanelMode.equals(MapPanelMode.SELECTING_RECTANGLE) && selectedRectangle!=null) {
             g.setColor(Color.LIGHT_GRAY);
             g.drawRect(selectedRectangle.x, selectedRectangle.y, selectedRectangle.width, selectedRectangle.height);
         }
 
         LOG.debug("paintComponent end {}ms.", System.currentTimeMillis()-start);
+    }
+
+    /**
+     * draw a marker (image and text)
+     *
+     * @param g Graphics2D
+     * @param gNode GNode
+     */
+    private void drawMarker(Graphics2D g, GNode gNode) {
+        RoadMapMarker marker = gNode.getMarker();
+        if (marker != null) {
+            Point p = backgroundMapImage.worldVertexToScreenPos(gNode);
+            if (isInView(backgroundMapImage.getRectangle(), p)) {
+                g.drawImage(markerImage, p.x - 10, p.y - 24, null);
+                g.setColor(Color.BLUE);
+                g.setFont(markerFontScale[backgroundMapImage.getZoomLevel()]);
+                g.drawString(marker.getName(), p.x + 15, p.y - 15);
+            }
+        }
     }
 
     /**
@@ -473,7 +503,7 @@ public class MapPanel extends JPanel {
         return point.x > 0 && point.x < rectangle.getWidth() && point.y > 0 && point.y < rectangle.getHeight();
     }
 
-    private void drawVertex(Graphics g, GNode gNode) {
+    private void drawVertex(Graphics2D g, GNode gNode) {
         Point p = backgroundMapImage.worldVertexToScreenPos(gNode);
         if (isInView(backgroundMapImage.getRectangle(), p)) {
             if (gNode.isSelected()) {
@@ -662,6 +692,20 @@ public class MapPanel extends JPanel {
 
     private Set<GEdge> getSelectedEdges() {
         return roadMap.getGraph().edgeSet().parallelStream().filter(GEdge::isSelected).collect(Collectors.toSet());
+    }
+
+    public void showNode(GNode node) {
+        backgroundMapImage.zoom(3-backgroundMapImage.getZoomLevel());
+        Point point = backgroundMapImage.worldVertexToScreenPos(node);
+        movePointToMid(point);
+        repaint();
+    }
+
+    private void movePointToMid(Point point) {
+        Rectangle viewport = backgroundMapImage.getRectangle();
+        int dx = point.x - (viewport.width / 2);
+        int dy = point.y - (viewport.height / 2);
+        backgroundMapImage.move( dx, dy, viewport.width, viewport.height);
     }
 
 

@@ -3,76 +3,47 @@ package de.adEditor.gui.editor;
 import de.adEditor.ApplicationContextProvider;
 import de.adEditor.config.AdConfiguration;
 import de.adEditor.gui.ConfigDialog;
+import de.adEditor.gui.graph.RoadMapMarker;
 import de.adEditor.gui.route.RoutesManagerPanel;
 import de.adEditor.helper.IconHelper;
 import de.adEditor.mapper.AutoDriveConfigToRoadMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPathExpressionException;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class EditorFrame extends JFrame {
 
-
-    public static final int EDITORSTATE_NOOP = -1;
-    public static final int EDITORSTATE_MOVING = 0;
-    public static final int EDITORSTATE_DELETING = 1;
-    public static final int EDITORSTATE_CONNECTING = 2;
-    public static final int EDITORSTATE_CREATING = 3;
-    public static final int EDITORSTATE_DELETING_DESTINATION = 4;
-    public static final int EDITORSTATE_CREATING_DESTINATION = 5;
-    public static final String MOVE_NODES = "Move Nodes";
-    public static final String CONNECT_NODES = "Connect Nodes";
-    public static final String REMOVE_NODES = "Remove Nodes";
-    public static final String REMOVE_DESTINATIONS = "Remove Destinations";
-    public static final String CREATE_NODES = "Create Nodes";
-    public static final String CREATE_DESTINATIONS = "Create Destinations";
-    public static final String AUTO_DRIVE_COURSE_EDITOR_TITLE = "AutoDrive Course Editor 0.1";
+    public static final String AUTO_DRIVE_COURSE_EDITOR_TITLE = "AutoDrive Course Editor 2.0";
 
     private MapPanel mapPanel;
     private RoutesManagerPanel routesManagerPanel;
-    private JButton saveButton;
-    private JButton loadImageButton;
-    private JToggleButton removeNode;
-    private JToggleButton removeDestination;
-    private JToggleButton moveNode;
-    private JToggleButton connectNodes;
-    private JToggleButton createNode;
-    private JToggleButton createDestination;
-    private JRadioButton oneTimesMap;
-    private JRadioButton fourTimesMap;
-    private JRadioButton sixteenTimesMap;
     private JTabbedPane tabPane;
     private Component destinationTreePanel;
 
-    public int editorState = EDITORSTATE_NOOP;
     private File xmlConfigFile;
     private boolean stale = false;
     private EditorMode editorMode = EditorMode.MOVE;
+    private DefaultMutableTreeNode markerRootNode = new DefaultMutableTreeNode();
+    private JTree markerTree;
 
     private static Logger LOG = LoggerFactory.getLogger(EditorFrame.class);
 
@@ -136,93 +107,6 @@ public class EditorFrame extends JFrame {
         c.fill= GridBagConstraints.BOTH;
         editorPanel.add(mapPanel, c);
 
-//        EditorListener editorListener = new EditorListener(this);
-
-//        JPanel buttonPanel = new JPanel(new FlowLayout());
-//
-//        JPanel configBox = new JPanel();
-//        configBox.setBorder(BorderFactory.createTitledBorder("Config"));
-//        buttonPanel.add(configBox);
-//
-//        JButton loadRoadMapButton = new JButton("Load");
-//        loadRoadMapButton.addActionListener(editorListener);
-//        loadRoadMapButton.setActionCommand("Load");
-//        configBox.add(loadRoadMapButton);
-//
-//        saveButton = new JButton("Save");
-//        saveButton.addActionListener(editorListener);
-//        saveButton.setActionCommand("Save");
-//        saveButton.setEnabled(false);
-//        configBox.add(saveButton);
-//
-//        JPanel mapBox = new JPanel();
-//        mapBox.setBorder(BorderFactory.createTitledBorder("Map and zoom factor"));
-//        buttonPanel.add(mapBox);
-//
-//        loadImageButton = new JButton("Load Map");
-//        loadImageButton.addActionListener(editorListener);
-//        loadImageButton.setActionCommand("Load Image");
-//        mapBox.add(loadImageButton);
-//
-//        ButtonGroup zoomGroup = new ButtonGroup();
-//        oneTimesMap = new JRadioButton(" 1x");
-//        oneTimesMap.addActionListener(editorListener);
-//        oneTimesMap.setActionCommand("OneTimesMap");
-//        oneTimesMap.setSelected(true);
-//        mapBox.add(oneTimesMap);
-//        zoomGroup.add(oneTimesMap);
-//
-//        fourTimesMap = new JRadioButton(" 4x");
-//        fourTimesMap.addActionListener(editorListener);
-//        fourTimesMap.setActionCommand("FourTimesMap");
-//        mapBox.add(fourTimesMap);
-//        zoomGroup.add(fourTimesMap);
-//
-//        sixteenTimesMap = new JRadioButton(" 16x");
-//        sixteenTimesMap.addActionListener(editorListener);
-//        sixteenTimesMap.setActionCommand("SixteenTimesMap");
-//        mapBox.add(sixteenTimesMap);
-//        zoomGroup.add(sixteenTimesMap);
-//
-//        JPanel nodeBox = new JPanel();
-//        nodeBox.setBorder(BorderFactory.createTitledBorder("Nodes"));
-//        buttonPanel.add(nodeBox);
-//
-//        moveNode = new JToggleButton("Move Nodes");
-//        moveNode.addActionListener(editorListener);
-//        moveNode.setActionCommand(MOVE_NODES);
-//        nodeBox.add(moveNode);
-//
-//        connectNodes = new JToggleButton("Connect Nodes");
-//        connectNodes.addActionListener(editorListener);
-//        connectNodes.setActionCommand(CONNECT_NODES);
-//        connectNodes.setName(CONNECT_NODES);
-//        nodeBox.add(connectNodes);
-//
-//        removeNode = new JToggleButton("Delete Nodes");
-//        removeNode.addActionListener(editorListener);
-//        removeNode.setActionCommand(REMOVE_NODES);
-//        nodeBox.add(removeNode);
-//
-//        removeDestination = new JToggleButton("Delete Destination");
-//        removeDestination.addActionListener(editorListener);
-//        removeDestination.setActionCommand(REMOVE_DESTINATIONS);
-//        nodeBox.add(removeDestination);
-//
-//        createNode = new JToggleButton("Create Node");
-//        createNode.addActionListener(editorListener);
-//        createNode.setActionCommand(CREATE_NODES);
-//        nodeBox.add(createNode);
-//
-//        createDestination = new JToggleButton("Create Destination");
-//        createDestination.addActionListener(editorListener);
-//        createDestination.setActionCommand(CREATE_DESTINATIONS);
-//        nodeBox.add(createDestination);
-//
-//        updateButtons();
-//        nodeBoxSetEnabled(false);
-//        mapBoxSetEnabled(false);
-
         destinationTreePanel = createDestinationTreePanel();
         c.gridx = 2;
         c.gridy = 0;
@@ -231,43 +115,37 @@ public class EditorFrame extends JFrame {
         c.fill= GridBagConstraints.VERTICAL;
         editorPanel.add(destinationTreePanel, c );
 
-//        editorPanel.add(buttonPanel, BorderLayout.NORTH);
-
         pack();
         setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     private Component createDestinationTreePanel() {
-        JPanel treePanel = new JPanel(new BorderLayout());
-        treePanel.setPreferredSize(new Dimension(200,100));
-        treePanel.setMinimumSize(new Dimension(200,100));
-        treePanel.add (new Label("Markers"), BorderLayout.NORTH);
+        JPanel markerTreePanel = new JPanel(new BorderLayout());
+        markerTreePanel.setPreferredSize(new Dimension(250,100));
+        markerTreePanel.setMinimumSize(new Dimension(250,100));
+        markerTreePanel.add (new Label("Markers"), BorderLayout.NORTH);
 
-        //create the root node
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode();
-        //create the child nodes
-        DefaultMutableTreeNode vegetableNode = new DefaultMutableTreeNode("Fields");
-        vegetableNode.add(new DefaultMutableTreeNode("Train Station Mill"));
-        vegetableNode.add(new DefaultMutableTreeNode("Silo tanken"));
-        vegetableNode.add(new DefaultMutableTreeNode("Port Northwest"));
-        vegetableNode.add(new DefaultMutableTreeNode("Bio Gas Plant"));
-        DefaultMutableTreeNode fruitNode = new DefaultMutableTreeNode("Buy Points");
-        fruitNode.add(new DefaultMutableTreeNode("Gas Station East"));
-        fruitNode.add(new DefaultMutableTreeNode("Parkplatz Drescher"));
-        fruitNode.add(new DefaultMutableTreeNode("Railroad Silo West"));
-        fruitNode.add(new DefaultMutableTreeNode("Spinnery"));
-        fruitNode.add(new DefaultMutableTreeNode("Gas Station South"));
-        //add the child nodes to the root node
-        root.add(vegetableNode);
-        root.add(fruitNode);
+        markerTree = new JTree(markerRootNode);
+        markerTree.setRootVisible(false);
+        markerTree.setShowsRootHandles(true);
 
-        JTree tree = new JTree(root);
-        tree.setRootVisible(false);
-        tree.setShowsRootHandles(true);
-        treePanel.add(new JScrollPane(tree), BorderLayout.CENTER);
+        markerTree.addTreeSelectionListener(event -> {
+            DefaultMutableTreeNode selectedComponent = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
+            Object userObject = selectedComponent.getUserObject();
+            if (userObject instanceof RoadMapMarker) {
+                RoadMapMarker roadMapMarker = (RoadMapMarker) userObject;
+                mapPanel.showNode(roadMapMarker.getgNode());
+            }
+        });
 
-        return treePanel;
+        markerTreePanel.add(new JScrollPane(markerTree), BorderLayout.CENTER);
+
+        DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+        renderer.setLeafIcon(new ImageIcon(IconHelper.getImageUrl("marker.png")));
+        markerTree.setCellRenderer(renderer);
+
+        return markerTreePanel;
     }
 
     private Component createToolBar() {
@@ -316,6 +194,8 @@ public class EditorFrame extends JFrame {
                 try {
                     RoadMap roadMap = autoDriveConfigToRoadMap.loadXmlConfigFile(fileName);
                     mapPanel.setRoadMap(roadMap);
+                    updateMarker(roadMap);
+                    mapPanel.repaint();
                 } catch (ParserConfigurationException | IOException | SAXException | XPathExpressionException e) {
                     LOG.error(e.getMessage(), e);
                 }
@@ -390,6 +270,22 @@ public class EditorFrame extends JFrame {
         return toolbar;
     }
 
+    private void updateMarker(RoadMap roadMap) {
+        markerRootNode.removeAllChildren();
+        roadMap.getGroups().forEach(roadMapGroup ->{
+            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(roadMapGroup);
+            roadMapGroup.getMarkers().forEach(marker ->{
+                groupNode.add(new DefaultMutableTreeNode(marker));
+            });
+            markerRootNode.add(groupNode);
+        });
+        DefaultTreeModel model = (DefaultTreeModel)markerTree.getModel();
+        model.reload();
+        for (int r = 0; r < markerTree.getRowCount(); r++) {
+            markerTree.expandRow(r);
+        }
+    }
+
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -422,48 +318,6 @@ public class EditorFrame extends JFrame {
         return null;
     }
 
-    private void nodeBoxSetEnabled(boolean enabled) {
-        moveNode.setEnabled(enabled);
-        connectNodes.setEnabled(enabled);
-        removeNode.setEnabled(enabled);
-        removeDestination.setEnabled(enabled);
-        createNode.setEnabled(enabled);
-        createDestination.setEnabled(enabled);
-    }
-
-    private void mapBoxSetEnabled(boolean enabled) {
-        loadImageButton.setEnabled(enabled);
-    }
-
-    public void updateButtons() {
-        moveNode.setSelected(false);
-        connectNodes.setSelected(false);
-        removeNode.setSelected(false);
-        removeDestination.setSelected(false);
-        createNode.setSelected(false);
-        createDestination.setSelected(false);
-
-        switch (editorState) {
-            case EDITORSTATE_MOVING:
-                moveNode.setSelected(true);
-                break;
-            case EDITORSTATE_DELETING:
-                removeNode.setSelected(true);
-                break;
-            case EDITORSTATE_CONNECTING:
-                connectNodes.setSelected(true);
-                break;
-            case EDITORSTATE_CREATING:
-                createNode.setSelected(true);
-                break;
-            case EDITORSTATE_DELETING_DESTINATION:
-                removeDestination.setSelected(true);
-                break;
-            case EDITORSTATE_CREATING_DESTINATION:
-                createDestination.setSelected(true);
-                break;
-        }
-    }
 
 
     public void prepareMapPanel(RoadMap roadMap, String mapName) {
@@ -497,7 +351,7 @@ public class EditorFrame extends JFrame {
                         mapPath = "./" + mapName + ".png";
                         image = ImageIO.read(new File(mapPath));
                     } catch (Exception e3) {
-                        mapBoxSetEnabled(true);
+                        //mapBoxSetEnabled(true);
                         LOG.info("Editor has no map file for map: {}", mapName);
                     }
                 }

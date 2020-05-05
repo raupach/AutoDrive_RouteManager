@@ -29,4 +29,9 @@ public class RoadMapMarker {
     public void setGroup(RoadMapGroup group) {
         this.group = group;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

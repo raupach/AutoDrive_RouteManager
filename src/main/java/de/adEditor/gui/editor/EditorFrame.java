@@ -15,20 +15,19 @@ import org.xml.sax.SAXException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.*;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPathExpressionException;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Enumeration;
+import java.util.Optional;
 
 public class EditorFrame extends JFrame {
 
@@ -608,5 +607,27 @@ public class EditorFrame extends JFrame {
 
     public EditorMode getEditorMode() {
         return editorMode;
+    }
+
+    public void selectMarker(RoadMapMarker marker) {
+        getTreePathForMarker(marker).ifPresent(path -> {
+            markerTree.setSelectionPath(path);
+            markerTree.scrollPathToVisible(path);
+        });
+    }
+
+    private Optional<TreePath> getTreePathForMarker(RoadMapMarker marker) {
+        Enumeration<TreeNode> nodeEnumeration = markerRootNode.preorderEnumeration();
+        while (nodeEnumeration.hasMoreElements()) {
+            DefaultMutableTreeNode element = (DefaultMutableTreeNode) nodeEnumeration.nextElement();
+            Enumeration<TreeNode> leafNodeEnumeration = element.preorderEnumeration();
+            while (leafNodeEnumeration.hasMoreElements()) {
+                DefaultMutableTreeNode element2 = (DefaultMutableTreeNode) leafNodeEnumeration.nextElement();
+                if (marker.equals(element2.getUserObject())) {
+                    return Optional.of(new TreePath(element2.getPath()));
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

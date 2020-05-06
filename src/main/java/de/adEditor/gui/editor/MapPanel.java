@@ -313,6 +313,9 @@ public class MapPanel extends JPanel {
                         clearSelectedNodes();
                     }
                     node.setSelected(true);
+                    if (node.getMarker() != null) {
+                        editor.selectMarker(node.getMarker());
+                    }
                 }
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else if (optionalGEdge.isPresent()) {

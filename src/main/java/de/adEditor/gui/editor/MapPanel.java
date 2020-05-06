@@ -44,7 +44,7 @@ public class MapPanel extends JPanel {
     private BackgroundMapImage backgroundMapImage;
     private boolean mapMove = false;
     private Point lastMousePos = new Point();
-    private Point mousePos;
+    private Point mousePos = new Point(0,0);
     private GNode tempLastNode;
     private MapPanelMode mapPanelMode = MapPanelMode.NONE;
     private AffineTransform tx = new AffineTransform();
@@ -326,8 +326,8 @@ public class MapPanel extends JPanel {
                 newVertex.setSelected(true);
                 graph.addVertex(newVertex);
                 graph.removeEdge(edge);
-                graph.addEdge(source, newVertex, new GEdge(source, newVertex));
-                graph.addEdge(newVertex, target, new GEdge(newVertex, target));
+                graph.addEdge(source, newVertex, new GEdge(source, newVertex, false, edge.isDual()));
+                graph.addEdge(newVertex, target, new GEdge(newVertex, target, false, edge.isDual()));
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else if (optionalIntersetionEdge.isPresent()) {
                 clearSelectedNodes();
@@ -597,7 +597,7 @@ public class MapPanel extends JPanel {
                     graph.removeAllEdges(incomingEdges);
                     graph.removeAllEdges(outgoingEdges);
                     graph.removeVertex(selectedNode);
-                    graph.addEdge(newSource, newTarget, new GEdge(newSource, newTarget) );
+                    graph.addEdge(newSource, newTarget, new GEdge(newSource, newTarget, false, incomingEdges.get(0).isDual()) );
                 } else {
                     graph.removeAllEdges(incomingEdges);
                     graph.removeAllEdges(outgoingEdges);

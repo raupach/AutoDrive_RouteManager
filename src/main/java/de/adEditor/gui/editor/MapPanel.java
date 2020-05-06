@@ -92,7 +92,7 @@ public class MapPanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 mousePos = e.getPoint();
                 if (e.getButton() == MouseEvent.BUTTON1) {
-                    mouseButton1Pressed(e.getX(), e.getY());
+                    mouseButton1Pressed(e.getX(), e.getY(), e.isControlDown());
                 }
                 else if (e.getButton() == MouseEvent.BUTTON3) {
                     mouseButton3Pressed(e.getX(), e.getY());
@@ -192,12 +192,12 @@ public class MapPanel extends JPanel {
 
     private Optional<GNode> findNodeAt (int x, int y) {
         Rectangle r = new Rectangle(x-6, y-6, 12,12);
-        return findNodesInRect(r).stream().findFirst();
+        return findNodesInRect(r).parallelStream().findFirst();
     }
 
     private Optional<GEdge> findEdgeMidpointAt (int x, int y) {
         Rectangle r = new Rectangle(x-6, y-6, 12,12);
-        return findEdgeMidpointInRect(r).stream().findFirst();
+        return findEdgeMidpointInRect(r).parallelStream().findFirst();
     }
 
 
@@ -267,7 +267,6 @@ public class MapPanel extends JPanel {
             setCursor(Cursor.getDefaultCursor());
             repaint();
         }
-
     }
 
     private Set<GNode> findNodesInRect(Rectangle r) {
@@ -277,11 +276,10 @@ public class MapPanel extends JPanel {
     }
 
     private Set<GEdge> findEdgeMidpointInRect(Rectangle r) {
-        return roadMap.getGraph().edgeSet().stream()
+        return roadMap.getGraph().edgeSet().parallelStream()
                 .filter(n -> r.contains(backgroundMapImage.worldPosToScreenPos(n.getMidpoint())))
                 .collect(Collectors.toSet());
     }
-
 
 
     private void mouseDraggedButton3(int x, int y) {
@@ -301,7 +299,7 @@ public class MapPanel extends JPanel {
         lastMousePos = new Point(x,y);
     }
 
-    private void mouseButton1Pressed(int x, int y) {
+    private void mouseButton1Pressed(int x, int y, boolean controlDown) {
         if (editor.getEditorMode().equals(EditorMode.MOVE)) {
             touchedNode = null;
 
@@ -311,7 +309,9 @@ public class MapPanel extends JPanel {
             if (optionalGNode.isPresent()) {
                 GNode node = optionalGNode.get();
                 if (!node.isSelected()) {
-                    clearSelectedNodes();
+                    if (!controlDown) {
+                        clearSelectedNodes();
+                    }
                     node.setSelected(true);
                 }
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
@@ -330,7 +330,9 @@ public class MapPanel extends JPanel {
                 graph.addEdge(newVertex, target, new GEdge(newVertex, target, false, edge.isDual()));
                 mapPanelMode = MapPanelMode.DRAGGING_NODE;
             } else if (optionalIntersetionEdge.isPresent()) {
-                clearSelectedNodes();
+                if (!controlDown) {
+                    clearSelectedNodes();
+                }
                 optionalIntersetionEdge.get().setSelected(true);
             } else {
                 clearSelectedNodes();
@@ -653,7 +655,7 @@ public class MapPanel extends JPanel {
                 graph.removeEdge(edge);
                 GNode newNode = new GNode(node.getX(), node.getY(), node.getZ());
                 graph.addVertex(newNode);
-                graph.addEdge(newNode, target, new GEdge(newNode, target));
+                graph.addEdge(newNode, target, new GEdge(newNode, target, false, edge.isDual()));
             });
 
             List<GEdge>inEdges = new ArrayList<>(graph.incomingEdgesOf(node));
@@ -662,7 +664,7 @@ public class MapPanel extends JPanel {
                 graph.removeEdge(edge);
                 GNode newNode = new GNode(node.getX(), node.getY(), node.getZ());
                 graph.addVertex(newNode);
-                graph.addEdge(source, newNode, new GEdge(source, newNode));
+                graph.addEdge(source, newNode, new GEdge(source, newNode, false, edge.isDual()));
             });
 
             graph.removeVertex(node);

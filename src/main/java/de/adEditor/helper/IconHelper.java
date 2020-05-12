@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
@@ -19,7 +19,7 @@ public class IconHelper {
         return AutoDriveEditor.class.getResource(imgLocation);
     }
 
-    public static Image loadImage(String path) {
+    public static BufferedImage loadImage(String path) {
         try {
             URL url = EditorFrame.class.getResource(path);
             return ImageIO.read(url);

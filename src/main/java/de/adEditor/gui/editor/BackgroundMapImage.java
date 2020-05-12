@@ -1,34 +1,132 @@
 package de.adEditor.gui.editor;
 
+import de.adEditor.AppConfig;
+import de.adEditor.ApplicationContextProvider;
 import de.adEditor.gui.graph.GNode;
+import de.adEditor.helper.IconHelper;
+import de.adEditor.service.HttpClientService;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
 import org.imgscalr.Scalr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static de.autoDrive.NetworkServer.rest.MapTileInfo.DIMENSIONS;
+import static de.autoDrive.NetworkServer.rest.MapTileInfo.TILE_SIZE;
 
 public class BackgroundMapImage {
 
     private static Logger LOG = LoggerFactory.getLogger(BackgroundMapImage.class);
 
-    private BufferedImage originalImage;
-    private BufferedImage scaledImage;
     private Rectangle rectangle;
     private int currentZoomLevel = -1;
-    private static final double[] scale = {1, 2.5, 5, 7.5, 10, 12.5};
+    private static final double[] scale = {1, 2.5, 5, 7.5, 10, 12.5, 15};
+    private MapInfo mapInfo;
 
-    public BackgroundMapImage(BufferedImage image) {
-        this.originalImage = image;
-        this.rectangle = new Rectangle(0, 0, originalImage.getWidth(), originalImage.getHeight());
+    private CacheManager cacheManager = ApplicationContextProvider.getContext().getBean(CacheManager.class);
+    private HttpClientService httpClientService = ApplicationContextProvider.getContext().getBean(HttpClientService.class);
+
+    Cache<String, Image> cache1 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L1, String.class, Image.class);
+    Cache<String, byte[]> cache2 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L2, String.class, byte[].class);
+    Cache<String, byte[]> cache3 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L3, String.class, byte[].class);
+
+    private Map<String, Long> requests = new HashMap<>();
+    private AtomicBoolean filling = new AtomicBoolean(false);
+    ExecutorService executor = Executors.newFixedThreadPool(10);
+    private MapPanel mapPanel;
+
+    public BackgroundMapImage(MapInfo mapInfo, int width, int height, MapPanel mapPanel) {
+        this.mapInfo = mapInfo;
+        this.rectangle = new Rectangle(0, 0, width, height);
+        this.mapPanel = mapPanel;
         zoom(0);
     }
 
 
     public void draw(Graphics2D g) {
-        BufferedImage cutoutImage = scaledImage.getSubimage(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
-        g.drawImage(cutoutImage, 0, 0, rectangle.width, rectangle.height, null);
+
+        if (rectangle != null) {
+            for (int x = (rectangle.x / TILE_SIZE) * TILE_SIZE, ix = 0; x < rectangle.x + rectangle.width; x += TILE_SIZE, ix += TILE_SIZE) {
+                for (int y = (rectangle.y / TILE_SIZE) * TILE_SIZE, iy = 0; y < rectangle.y + rectangle.height; y += TILE_SIZE, iy += TILE_SIZE) {
+
+                    int kx = rectangle.x % TILE_SIZE;
+                    int ky = rectangle.y % TILE_SIZE;
+                    BufferedImage tile = getTile(currentZoomLevel, x, y);
+                    g.drawImage(tile, ix - kx, iy - ky, tile.getWidth(), tile.getHeight(), null);
+
+                    g.setColor(Color.RED);
+                    g.drawRect(ix - kx, iy - ky, tile.getWidth(), tile.getHeight());
+                    g.drawString("x: " + x + ", y: " + y, ix - kx + 5, iy - ky + 15);
+                }
+            }
+        }
+    }
+
+    private BufferedImage getTile(int zoomLevel, int x, int y) {
+        String k = toCacheKey(zoomLevel, x, y);
+        Image tile = cache1.get(k);
+        if (tile != null) {
+            return (BufferedImage) tile;
+        } else {
+            LOG.info("cache1 empty: {}", k);
+
+            byte[] data = cache2.get(k);
+            if (data!=null) {
+                BufferedImage img = toImage(data);
+                cache1.put(k, img);
+                return img;
+            } else {
+                data = cache3.get(k);
+                if (data!=null) {
+                    BufferedImage img = toImage(data);
+                    cache1.put(k, img);
+                    return img;
+                } else {
+
+                    LOG.info("mapDB empty: {}", k);
+
+                    if (!requests.containsKey(k)) {
+                        httpClientService.getMap("FELSBRUNN", zoomLevel, x, y, event -> {
+                            if (event.isPresent()) {
+                                byte[] imgData = event.get();
+                                BufferedImage image = toImage(imgData);
+                                cache1.put(k, image);
+                                cache2.put(k, imgData);
+                                requests.remove(k);
+                                mapPanel.repaint();
+                            } else {
+                                Runnable runnableTask = () -> {
+                                    fillCache(zoomLevel);
+                                    mapPanel.repaint();
+                                };
+                                executor.submit(runnableTask);
+                            }
+                        });
+                        requests.put(k, System.currentTimeMillis());
+                    }
+                }
+            }
+        }
+
+        LOG.info("nothing found: {}", k);
+        return new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
     }
 
     public boolean zoom(int level) {
@@ -44,10 +142,6 @@ public class BackgroundMapImage {
 
         if (currentZoomLevel!=newZoomLevel) {
             currentZoomLevel = newZoomLevel;
-            double scaleFactor = getScaleFactor();
-            double w = originalImage.getWidth() * scaleFactor;
-            double h = originalImage.getHeight() * scaleFactor;
-            scaledImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC, (int) w, (int) h);
             LOG.info("zoom currentZoomLevel: {} in {}ms", currentZoomLevel, System.currentTimeMillis() - start);
             return true;
         } else {
@@ -56,35 +150,89 @@ public class BackgroundMapImage {
         }
     }
 
+    private void fillCache(int currentZoomLevel) {
+        LOG.info("fillCache level: {}", currentZoomLevel);
+        if (!filling.get()) {
+            filling.set(true);
+            int w = DIMENSIONS[currentZoomLevel];
+            int h = DIMENSIONS[currentZoomLevel];
+
+            BufferedImage originalImage = IconHelper.loadImage("/mapImages/" + mapInfo.getMap() + ".png");
+            BufferedImage scaledImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC, (int) w, (int) h);
+            LinkedList<Pair<Integer, Integer>> workQueue = new LinkedList<>();
+
+            for (int x = 0; x < w; x += TILE_SIZE) {
+                for (int y = 0; y < h; y += TILE_SIZE) {
+                    workQueue.add(new ImmutablePair<>(x, y));
+                }
+            }
+
+            workQueue.parallelStream().forEach(p -> {
+                Integer x = p.getLeft();
+                Integer y = p.getRight();
+                try {
+                    String k = toCacheKey(currentZoomLevel, x, y);
+                    BufferedImage cutoutImage = scaledImage.getSubimage(x, y, x + TILE_SIZE <= w ? TILE_SIZE:w - x, y + TILE_SIZE <= h ? TILE_SIZE:h - y);
+                    byte[] byteArray = toByteArrayAutoClosable(cutoutImage);
+                    cache3.put(k, byteArray);
+                } catch (Exception e) {
+                    LOG.error(e.getMessage(), e);
+                }
+            });
+            filling.set(false);
+        }
+        LOG.info("end fillCache level: {}", currentZoomLevel);
+    }
+
+    private byte[] toByteArrayAutoClosable(BufferedImage image) throws IOException {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()){
+            ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        }
+    }
+
+    private BufferedImage toImage(byte[] imageInByte) {
+
+        try (InputStream in = new ByteArrayInputStream(imageInByte)) {
+            return ImageIO.read(in);
+        } catch (IOException e) {
+            LOG.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     public void move(int x, int y, int dx, int dy) {
+        if (rectangle != null) {
+            rectangle.x += x;
+            rectangle.y += y;
+            rectangle.width = dx;
+            rectangle.height = dy;
 
-        rectangle.x += x;
-        rectangle.y += y;
-        rectangle.width = dx;
-        rectangle.height = dy;
+            if (rectangle.x < 0) {
+                rectangle.x = 0;
+            }
 
-        if (rectangle.x < 0) {
-            rectangle.x = 0;
-        }
+            if (rectangle.y < 0) {
+                rectangle.y = 0;
+            }
 
-        if (rectangle.y < 0) {
-            rectangle.y = 0;
-        }
+            Integer dimension = mapInfo.getDimensions();
 
-        if (rectangle.x + rectangle.width > scaledImage.getWidth()) {
-            rectangle.x = scaledImage.getWidth() - rectangle.width;
-        }
+            if (rectangle.x + rectangle.width > dimension*getScaleFactor()) {
+                rectangle.x = (int) ((dimension*getScaleFactor()) - rectangle.width);
+            }
 
-        if (rectangle.y + rectangle.height > scaledImage.getHeight()) {
-            rectangle.y = scaledImage.getHeight() - rectangle.height;
-        }
+            if (rectangle.y + rectangle.height > dimension*getScaleFactor()) {
+                rectangle.y = (int) ((dimension*getScaleFactor()) - rectangle.height);
+            }
 
-        if (rectangle.width > scaledImage.getWidth()) {
-            rectangle.width = scaledImage.getWidth();
-        }
+            if (rectangle.width > dimension*getScaleFactor()) {
+                rectangle.width = (int) (dimension*getScaleFactor());
+            }
 
-        if (rectangle.height > scaledImage.getHeight()) {
-            rectangle.height = scaledImage.getHeight();
+            if (rectangle.height > dimension*getScaleFactor()) {
+                rectangle.height = (int) (dimension*getScaleFactor());
+            }
         }
     }
 
@@ -130,4 +278,11 @@ public class BackgroundMapImage {
         return new Point((int) screenPosX, (int) screenPosY);
     }
 
+    private String toCacheKey (int zoomLevel, int x, int y) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(zoomLevel).append("-");
+        sb.append(x).append("-");
+        sb.append(y);
+        return sb.toString();
+    }
 }

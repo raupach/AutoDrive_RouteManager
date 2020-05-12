@@ -1,5 +1,6 @@
 package de.adEditor.gui.editor;
 
+import de.adEditor.AppConfig;
 import de.adEditor.ApplicationContextProvider;
 import de.adEditor.config.AdConfiguration;
 import de.adEditor.gui.ConfigDialog;
@@ -8,12 +9,16 @@ import de.adEditor.gui.route.RoutesManagerPanel;
 import de.adEditor.helper.IconHelper;
 import de.adEditor.mapper.AutoDriveConfigToRoadMap;
 import org.apache.commons.lang3.StringUtils;
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.*;
 import javax.xml.parsers.ParserConfigurationException;
@@ -62,6 +67,8 @@ public class EditorFrame extends JFrame {
                         saveMap();
                     }
                 }
+                CacheManager cacheManager = ApplicationContextProvider.getContext().getBean(CacheManager.class);
+                cacheManager.close();
                 super.windowClosing(e);
             }
         });
@@ -93,7 +100,6 @@ public class EditorFrame extends JFrame {
 
         // create a new panel with GridBagLayout manager
         mapPanel = new MapPanel(this);
-        mapPanel.setBackgroundMapImage (new BackgroundMapImage(loadMapImageFromDisk("Felsbrunn")));
 
         // set border for the panel
         mapPanel.setPreferredSize(new Dimension(1024, 768));
@@ -126,6 +132,8 @@ public class EditorFrame extends JFrame {
         markerTreePanel.add (new Label("Markers"), BorderLayout.NORTH);
 
         markerTree = new JTree(markerRootNode);
+        markerTree.setEditable(true);
+//        markerTree.setCellEditor(getEditor());
         markerTree.setRootVisible(false);
         markerTree.setShowsRootHandles(true);
 
@@ -145,6 +153,17 @@ public class EditorFrame extends JFrame {
         markerTree.setCellRenderer(renderer);
 
         return markerTreePanel;
+    }
+
+    private TreeCellEditor getEditor() {
+        return new DefaultTreeCellEditor(markerTree, (DefaultTreeCellRenderer) markerTree.getCellRenderer()){
+            @Override
+            public Component getTreeCellEditorComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row) {
+                System.out.println("editing ");
+                return super.getTreeCellEditorComponent(tree, value, isSelected, expanded,leaf, row);
+            }
+
+        };
     }
 
     private Component createToolBar() {
@@ -298,6 +317,21 @@ public class EditorFrame extends JFrame {
         });
         menu.add(menuConfigItem);
 
+        JMenuItem menuClearCacheItem = new JMenuItem("Clear cache");
+        menuClearCacheItem.addActionListener(e ->{
+            CacheManager cacheManager = ApplicationContextProvider.getContext().getBean(CacheManager.class);
+            Cache<String, Image> cache1 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L1, String.class, Image.class);
+            Cache<String, byte[]> cache2 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L2, String.class, byte[].class);
+            Cache<String, byte[]> cache3 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L3, String.class, byte[].class);
+
+            cache1.clear();
+            cache2.clear();
+            cache3.clear();
+
+            mapPanel.repaint();
+        });
+        menu.add(menuClearCacheItem);
+
         JMenuItem menuQuitItem = new JMenuItem("Quit");
         menuQuitItem.addActionListener(e -> System.exit(0));
         menu.add(menuQuitItem);
@@ -320,10 +354,6 @@ public class EditorFrame extends JFrame {
 
 
     public void prepareMapPanel(RoadMap roadMap, String mapName) {
-        BufferedImage image = loadMapImageFromDisk(mapName);
-        if (image != null) {
-            mapPanel.setBackgroundMapImage(new BackgroundMapImage(image));
-        }
         mapPanel.setRoadMap(roadMap);
         mapPanel.repaint();
         tabPane.setSelectedIndex(0);

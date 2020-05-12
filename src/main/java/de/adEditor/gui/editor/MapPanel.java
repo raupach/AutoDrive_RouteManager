@@ -52,7 +52,7 @@ public class MapPanel extends JPanel {
     private GEdge touchedEdgeMidpoint;
 
     private ArrowHead arrowHead = new ArrowHead();
-    private static final double[] arrowHeadScale = { 0.1, 0.5, 0.6, 0.7, 0.8, 1};
+    private static final double[] arrowHeadScale = { 0.1, 0.5, 0.6, 0.7, 0.8, 1, 1};
 
     private static final Image markerImage = IconHelper.loadImage("/icons/marker.png");
     private static final Font[] markerFontScale = {
@@ -61,7 +61,8 @@ public class MapPanel extends JPanel {
             new Font("default", Font.BOLD, 11),
             new Font("default", Font.BOLD, 11),
             new Font("default", Font.BOLD, 17),
-            new Font("default", Font.BOLD, 17)
+            new Font("default", Font.BOLD, 17),
+            new Font("default", Font.BOLD, 19)
     };
 
     public MapPanel(EditorFrame editor) {
@@ -188,6 +189,8 @@ public class MapPanel extends JPanel {
                 mouseWheelMovedd(1);
             }
         });
+
+        backgroundMapImage = new BackgroundMapImage(roadMap.getMapInfo(), getWidth(), getHeight(), this);
     }
 
     private Optional<GNode> findNodeAt (int x, int y) {

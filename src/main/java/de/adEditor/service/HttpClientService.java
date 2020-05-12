@@ -8,6 +8,7 @@ import de.autoDrive.NetworkServer.rest.dto_v1.RoutesStoreResponseDto;
 import de.autoDrive.NetworkServer.rest.dto_v1.WaypointsResponseDto;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
@@ -114,6 +115,33 @@ public class HttpClientService {
 
                 LOG.info("Received response with status code {}", response.statusCode());
                 handler.handle(Optional.of(dto));
+            } else {
+                LOG.error("Something went wrong {}", ar.cause().getMessage());
+                handler.handle(Optional.empty());
+            }
+        });
+
+    }
+
+    public void getMap(String mapName, Integer zoomLevel, Integer x, Integer y,  Handler<Optional<byte[]>> handler) {
+
+        String path = RoutesRestPath.CONTEXT_PATH + RoutesRestPath.MAPS +"/"+ mapName+"/level/"+zoomLevel;
+        HttpRequest<Buffer> getMap = client.get(PORT, HOST, path)
+                .ssl(USE_SSL)
+                .addQueryParam("x", x.toString())
+                .addQueryParam("y", y.toString())
+                .putHeader("Accept", "application/octet-stream")
+                .as(BodyCodec.buffer())
+                .expect(ResponsePredicate.SC_OK);
+
+        getMap.send(ar -> {
+            if (ar.succeeded()) {
+                HttpResponse<Buffer> response = ar.result();
+                Buffer body = response.body();
+                byte[] data = body.getBytes();
+
+                LOG.info("Received response with status code {}", response.statusCode());
+                handler.handle(Optional.of(data));
             } else {
                 LOG.error("Something went wrong {}", ar.cause().getMessage());
                 handler.handle(Optional.empty());

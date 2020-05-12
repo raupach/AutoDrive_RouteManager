@@ -13,6 +13,7 @@ import java.util.List;
 
 public class RoadMap {
 
+    private MapInfo mapInfo = new MapInfo();
     private Graph<GNode, GEdge> graph = new SimpleDirectedGraph<>(GEdge.class);
     private List<RoadMapMarker> markers = new ArrayList<>();
     private List<RoadMapGroup> groups = new ArrayList<>();
@@ -39,5 +40,13 @@ public class RoadMap {
 
     public void setGroups(List<RoadMapGroup> groups) {
         this.groups = groups;
+    }
+
+    public MapInfo getMapInfo() {
+        return mapInfo;
+    }
+
+    public void setMapInfo(MapInfo mapInfo) {
+        this.mapInfo = mapInfo;
     }
 }

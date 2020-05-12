@@ -2,6 +2,8 @@ package de.adEditor;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import de.adEditor.gui.editor.EditorFrame;
+import org.ehcache.CacheManager;
+import org.ehcache.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -29,6 +31,13 @@ public class AutoDriveEditor extends JFrame {
             Thread.setDefaultUncaughtExceptionHandler(globalExceptionHandler);
             new EditorFrame().setVisible(true);
         });
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            CacheManager cacheManager = context.getBean(CacheManager.class);
+            if (cacheManager.getStatus().equals(Status.AVAILABLE)) {
+                cacheManager.close();
+            }
+        }));
     }
 
 }

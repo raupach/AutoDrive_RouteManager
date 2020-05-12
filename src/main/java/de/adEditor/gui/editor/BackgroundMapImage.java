@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 
 import static de.autoDrive.NetworkServer.rest.MapTileInfo.DIMENSIONS;
 import static de.autoDrive.NetworkServer.rest.MapTileInfo.TILE_SIZE;
@@ -43,13 +43,13 @@ public class BackgroundMapImage {
     private CacheManager cacheManager = ApplicationContextProvider.getContext().getBean(CacheManager.class);
     private HttpClientService httpClientService = ApplicationContextProvider.getContext().getBean(HttpClientService.class);
 
-    Cache<String, Image> cache1 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L1, String.class, Image.class);
-    Cache<String, byte[]> cache2 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L2, String.class, byte[].class);
-    Cache<String, byte[]> cache3 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L3, String.class, byte[].class);
+    private Cache<String, Image> cache1 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L1, String.class, Image.class);
+    private Cache<String, byte[]> cache2 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L2, String.class, byte[].class);
+    private Cache<String, byte[]> cache3 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L3, String.class, byte[].class);
 
     private Map<String, Long> requests = new HashMap<>();
-    private AtomicBoolean filling = new AtomicBoolean(false);
-    ExecutorService executor = Executors.newFixedThreadPool(10);
+    private final Semaphore available = new Semaphore(1);
+    private ExecutorService executor = Executors.newFixedThreadPool(10);
     private MapPanel mapPanel;
 
     public BackgroundMapImage(MapInfo mapInfo, int width, int height, MapPanel mapPanel) {
@@ -113,7 +113,7 @@ public class BackgroundMapImage {
                                 mapPanel.repaint();
                             } else {
                                 Runnable runnableTask = () -> {
-                                    fillCache(zoomLevel);
+                                    fillCache(zoomLevel, k);
                                     mapPanel.repaint();
                                 };
                                 executor.submit(runnableTask);
@@ -150,37 +150,44 @@ public class BackgroundMapImage {
         }
     }
 
-    private void fillCache(int currentZoomLevel) {
+    private void fillCache(int currentZoomLevel, String key) {
         LOG.info("fillCache level: {}", currentZoomLevel);
-        if (!filling.get()) {
-            filling.set(true);
-            int w = DIMENSIONS[currentZoomLevel];
-            int h = DIMENSIONS[currentZoomLevel];
+        try {
+            available.acquire();
+            if (!cache3.containsKey(key)) {
+                int w = DIMENSIONS[currentZoomLevel];
+                int h = DIMENSIONS[currentZoomLevel];
 
-            BufferedImage originalImage = IconHelper.loadImage("/mapImages/" + mapInfo.getMap() + ".png");
-            BufferedImage scaledImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC, (int) w, (int) h);
-            LinkedList<Pair<Integer, Integer>> workQueue = new LinkedList<>();
+                BufferedImage originalImage = IconHelper.loadImage("/mapImages/" + mapInfo.getMap() + ".png");
+                BufferedImage scaledImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC, (int) w, (int) h);
+                LinkedList<Pair<Integer, Integer>> workQueue = new LinkedList<>();
 
-            for (int x = 0; x < w; x += TILE_SIZE) {
-                for (int y = 0; y < h; y += TILE_SIZE) {
-                    workQueue.add(new ImmutablePair<>(x, y));
+                for (int x = 0; x < w; x += TILE_SIZE) {
+                    for (int y = 0; y < h; y += TILE_SIZE) {
+                        workQueue.add(new ImmutablePair<>(x, y));
+                    }
                 }
+
+                workQueue.parallelStream().forEach(p -> {
+                    Integer x = p.getLeft();
+                    Integer y = p.getRight();
+                    try {
+                        String k = toCacheKey(currentZoomLevel, x, y);
+                        BufferedImage cutoutImage = scaledImage.getSubimage(x, y, x + TILE_SIZE <= w ? TILE_SIZE:w - x, y + TILE_SIZE <= h ? TILE_SIZE:h - y);
+                        byte[] byteArray = toByteArrayAutoClosable(cutoutImage);
+                        cache3.put(k, byteArray);
+                    } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
+                    }
+                });
             }
-
-            workQueue.parallelStream().forEach(p -> {
-                Integer x = p.getLeft();
-                Integer y = p.getRight();
-                try {
-                    String k = toCacheKey(currentZoomLevel, x, y);
-                    BufferedImage cutoutImage = scaledImage.getSubimage(x, y, x + TILE_SIZE <= w ? TILE_SIZE:w - x, y + TILE_SIZE <= h ? TILE_SIZE:h - y);
-                    byte[] byteArray = toByteArrayAutoClosable(cutoutImage);
-                    cache3.put(k, byteArray);
-                } catch (Exception e) {
-                    LOG.error(e.getMessage(), e);
-                }
-            });
-            filling.set(false);
+        } catch (Throwable t) {
+           LOG.error(t.getMessage(), t);
         }
+        finally {
+            available.release();
+        }
+
         LOG.info("end fillCache level: {}", currentZoomLevel);
     }
 

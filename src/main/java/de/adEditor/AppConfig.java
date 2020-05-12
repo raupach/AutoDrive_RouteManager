@@ -2,11 +2,11 @@ package de.adEditor;
 
 import org.ehcache.CacheManager;
 import org.ehcache.PersistentCacheManager;
-import org.ehcache.config.builders.*;
+import org.ehcache.config.builders.CacheConfigurationBuilder;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.ExpiryPolicyBuilder;
+import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.MemoryUnit;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Configuration;
 import java.awt.*;
 import java.io.File;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentMap;
 
 @Configuration
 @ComponentScan(basePackages = "de.adEditor")

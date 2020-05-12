@@ -11,6 +11,7 @@ import de.adEditor.mapper.AutoDriveConfigToRoadMap;
 import org.apache.commons.lang3.StringUtils;
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
+import org.ehcache.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -68,7 +69,9 @@ public class EditorFrame extends JFrame {
                     }
                 }
                 CacheManager cacheManager = ApplicationContextProvider.getContext().getBean(CacheManager.class);
-                cacheManager.close();
+                if (cacheManager.getStatus().equals(Status.AVAILABLE)) {
+                    cacheManager.close();
+                }
                 super.windowClosing(e);
             }
         });

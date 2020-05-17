@@ -49,14 +49,14 @@ public class KeycloakService {
     }
 
     public String getToken() {
-//        try {
-//            if (keycloak.getToken() == null) {
-//                login();
-//            }
-//            return keycloak.getTokenString(minValidity, TimeUnit.SECONDS);
-//        } catch (VerificationException | IOException | ServerRequest.HttpFailure e) {
-//            LOG.error(e.getMessage(), e);
-//        }
+        try {
+            if (keycloak.getToken() == null) {
+                login();
+            }
+            return keycloak.getTokenString(minValidity, TimeUnit.SECONDS);
+        } catch (VerificationException | IOException | ServerRequest.HttpFailure e) {
+            LOG.error(e.getMessage(), e);
+        }
         return "";
     }
 

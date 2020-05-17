@@ -100,7 +100,7 @@ public class AutoDriveRemoteRoutesTableModel implements TableModel {
             case 5:
                 SimpleDateFormat sdf = new SimpleDateFormat(RoutesRestPath.DATE_FORMAT);
                 try {
-                    return  sdf.parse(route.getDate());
+                    return route.getDate()!=null?sdf.parse(route.getDate()):new Date();
                 } catch (ParseException e) {
                     LOG.error(e.getMessage(),e);
                     return null;

@@ -52,7 +52,7 @@ public class HttpClientService {
         String path = RoutesRestPath.CONTEXT_PATH + RoutesRestPath.ROUTES;
         HttpRequest<RoutesResponseDtos> getRoutes = client.get(PORT, HOST, path)
                 .ssl(USE_SSL)
-//                .bearerTokenAuthentication(keycloakService.getToken())
+                .bearerTokenAuthentication(keycloakService.getToken())
                 .putHeader("Accept", NetworkServiceRestType.MEDIATYPE_NETWORKSERVICE_JSON_V1)
                 .as(BodyCodec.json(RoutesResponseDtos.class))
                 .expect(ResponsePredicate.SC_OK);
@@ -77,7 +77,7 @@ public class HttpClientService {
         String path = RoutesRestPath.CONTEXT_PATH + RoutesRestPath.ROUTES;
         HttpRequest<RoutesStoreResponseDto> upload = client.post(PORT, HOST, path)
                 .ssl(USE_SSL)
-//                .bearerTokenAuthentication(keycloakService.getToken())
+                .bearerTokenAuthentication(keycloakService.getToken())
                 .putHeader("ContentType", "application/json")
                 .as(BodyCodec.json(RoutesStoreResponseDto.class))
                 .expect(ResponsePredicate.SC_CREATED);
@@ -103,7 +103,7 @@ public class HttpClientService {
         String path = RoutesRestPath.CONTEXT_PATH + RoutesRestPath.ROUTES + "/" + id + RoutesRestPath.WAYPOINTS;
         HttpRequest<WaypointsResponseDto> getWaypoints = client.get(PORT, HOST, path)
                 .ssl(USE_SSL)
-//                .bearerTokenAuthentication(keycloakService.getToken())
+                .bearerTokenAuthentication(keycloakService.getToken())
                 .putHeader("Accept", NetworkServiceRestType.MEDIATYPE_NETWORKSERVICE_JSON_V1)
                 .as(BodyCodec.json(WaypointsResponseDto.class))
                 .expect(ResponsePredicate.SC_OK);

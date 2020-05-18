@@ -21,9 +21,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -47,7 +47,7 @@ public class BackgroundMapImage {
     private Cache<String, byte[]> cache2 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L2, String.class, byte[].class);
     private Cache<String, byte[]> cache3 = cacheManager.getCache(AppConfig.IMAGES_CACHE_L3, String.class, byte[].class);
 
-    private Map<String, Long> requests = new HashMap<>();
+    private Map<String, Long> requests = new ConcurrentHashMap<>();
     private final Semaphore available = new Semaphore(1);
     private ExecutorService executor = Executors.newFixedThreadPool(10);
     private MapPanel mapPanel;
@@ -104,21 +104,26 @@ public class BackgroundMapImage {
 
                     if (!requests.containsKey(k)) {
                         httpClientService.getMap("FELSBRUNN", zoomLevel, x, y, event -> {
-                            if (event.isPresent()) {
-                                byte[] imgData = event.get();
-                                BufferedImage image = toImage(imgData);
-                                cache1.put(k, image);
-                                cache2.put(k, imgData);
-                                requests.remove(k);
-                                mapPanel.repaint();
-                            } else {
-                                Runnable runnableTask = () -> {
-                                    fillCache(zoomLevel, k);
+                            try {
+                                if (event.isPresent()) {
+                                    byte[] imgData = event.get();
+                                    BufferedImage image = toImage(imgData);
+                                    cache1.put(k, image);
+                                    cache2.put(k, imgData);
                                     mapPanel.repaint();
-                                };
-                                executor.submit(runnableTask);
+                                } else {
+                                    Runnable runnableTask = () -> {
+                                        fillCache(zoomLevel, k);
+                                        mapPanel.repaint();
+                                    };
+                                    executor.submit(runnableTask);
+                                }
+                            }
+                            finally {
+                                requests.remove(k);
                             }
                         });
+
                         requests.put(k, System.currentTimeMillis());
                     }
                 }

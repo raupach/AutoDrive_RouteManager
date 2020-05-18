@@ -36,6 +36,9 @@ public class HttpClientService {
 //    private final static String HOST = "autodrive.si12.de";
 //    private final static boolean USE_SSL = true;
 
+    private final static int TILE_SERVER_PORT = 443;
+    private final static String TILE_SERVER = "tile.si12.de";
+    private final static boolean TILE_SERVER_USE_SSL = true;
 
     @Autowired
     private KeycloakService keycloakService;
@@ -126,8 +129,8 @@ public class HttpClientService {
     public void getMap(String mapName, Integer zoomLevel, Integer x, Integer y,  Handler<Optional<byte[]>> handler) {
 
         String path = RoutesRestPath.CONTEXT_PATH + RoutesRestPath.MAPS +"/"+ mapName+"/level/"+zoomLevel;
-        HttpRequest<Buffer> getMap = client.get(PORT, HOST, path)
-                .ssl(USE_SSL)
+        HttpRequest<Buffer> getMap = client.get(TILE_SERVER_PORT, TILE_SERVER, path)
+                .ssl(TILE_SERVER_USE_SSL)
                 .addQueryParam("x", x.toString())
                 .addQueryParam("y", y.toString())
                 .putHeader("Accept", "application/octet-stream")
